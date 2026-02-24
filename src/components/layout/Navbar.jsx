@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Bell, Menu, User, ChevronDown } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useNotificationStore } from "../../store/notificationStore";

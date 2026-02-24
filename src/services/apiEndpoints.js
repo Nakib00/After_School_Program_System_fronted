@@ -3,22 +3,25 @@ const PREFIX = import.meta.env.VITE_API_PREFIX || '/api';
 export const API_BASE = `${BASE}${PREFIX}`;
 
 export const AUTH = {
-    LOGIN: `${API_BASE}/auth/login`,
-    LOGOUT: `${API_BASE}/auth/logout`,
-    ME: `${API_BASE}/auth/me`,
-    FORGOT_PASSWORD: `${API_BASE}/auth/forgot-password`,
+    LOGIN: `${API_BASE}/login`,
+    LOGOUT: `${API_BASE}/logout`,
+    REGISTER: `${API_BASE}/register`,
+    ME: `${API_BASE}/profile`,
+    FORGOT_PASSWORD: `${API_BASE}/auth/forgot-password`, // Keeping as is, assuming it might be in missing file or planned
     RESET_PASSWORD: `${API_BASE}/auth/reset-password`,
-    UPDATE_PROFILE: `${API_BASE}/auth/profile`,
-    CHANGE_PASSWORD: `${API_BASE}/auth/password`,
+    UPDATE_PROFILE: `${API_BASE}/update-profile`,
+    CHANGE_PASSWORD: `${API_BASE}/change-password`,
 };
 
 export const CENTERS = {
-    LIST: `${API_BASE}/centers`,
-    CREATE: `${API_BASE}/centers`,
-    DETAIL: (id) => `${API_BASE}/centers/${id}`,
-    UPDATE: (id) => `${API_BASE}/centers/${id}`,
-    DELETE: (id) => `${API_BASE}/centers/${id}`,
-    STATS: (id) => `${API_BASE}/centers/${id}/stats`,
+    LIST: `${API_BASE}/center`,
+    CREATE: `${API_BASE}/center`,
+    DETAIL: (id) => `${API_BASE}/center/${id}`,
+    UPDATE: (id) => `${API_BASE}/center/${id}`,
+    DELETE: (id) => `${API_BASE}/center/${id}`,
+    STATS: (id) => `${API_BASE}/center/stats/${id}`,
+    ADMINS: `${API_BASE}/center-admins`,
+    PARENTS: `${API_BASE}/parents`,
 };
 
 export const STUDENTS = {
@@ -34,12 +37,12 @@ export const STUDENTS = {
 };
 
 export const TEACHERS = {
-    LIST: `${API_BASE}/teachers`,
-    CREATE: `${API_BASE}/teachers`,
-    DETAIL: (id) => `${API_BASE}/teachers/${id}`,
-    UPDATE: (id) => `${API_BASE}/teachers/${id}`,
-    STUDENTS: (id) => `${API_BASE}/teachers/${id}/students`,
-    ASSIGN_STUDENTS: (id) => `${API_BASE}/teachers/${id}/assign-students`,
+    LIST: `${API_BASE}/teacher`,
+    CREATE: `${API_BASE}/teacher`,
+    DETAIL: (id) => `${API_BASE}/teacher/${id}`,
+    UPDATE: (id) => `${API_BASE}/teacher/${id}`,
+    STUDENTS: (id) => `${API_BASE}/teacher/${id}/students`,
+    ASSIGN_STUDENTS: `${API_BASE}/teacher/assign-students`,
 };
 
 export const SUBJECTS = {
@@ -100,7 +103,7 @@ export const FEES = {
 };
 
 export const DASHBOARD = {
-    STATS: `${API_BASE}/dashboard/stats`,
+    STATS: `${API_BASE}/dashboard/kpis`,
 };
 
 export const REPORTS = {

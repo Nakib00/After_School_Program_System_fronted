@@ -1,148 +1,90 @@
-import React, { useState } from "react";
-import { TrendingUp, BookOpen, Clock, Activity } from "lucide-react";
+import React from "react";
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
-import StatCard from "../../components/ui/StatCard";
-import Badge from "../../components/ui/Badge";
 
 const ChildProgress = () => {
   const data = [
-    { name: "Jan", score: 75 },
-    { name: "Feb", score: 82 },
-    { name: "Mar", score: 80 },
-    { name: "Apr", score: 88 },
-    { name: "May", score: 85 },
-    { name: "Jun", score: 92 },
+    { name: "Accuracy", value: 92, color: "#3b82f6" },
+    { name: "Speed", value: 78, color: "#10b981" },
+    { name: "Attendance", value: 95, color: "#f59e0b" },
+    { name: "Completion", value: 88, color: "#8b5cf6" },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">
-          Child Progress Report
+          Child Progress Analysis
         </h2>
-        <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-100 shadow-sm">
-          <span className="text-sm font-medium text-gray-500">Subject:</span>
-          <select className="text-sm font-bold text-blue-600 outline-none">
-            <option>Mathematics</option>
-            <option>English</option>
-          </select>
+        <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
+          Current Level: C1
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Average Score"
-          value="86%"
-          icon={TrendingUp}
-          color="green"
-          trend={5}
-        />
-        <StatCard
-          title="Worksheets Done"
-          value="45"
-          icon={BookOpen}
-          color="blue"
-        />
-        <StatCard
-          title="Last Score"
-          value="92/100"
-          icon={Activity}
-          color="purple"
-        />
-        <StatCard title="Study Hours" value="12h" icon={Clock} color="orange" />
-      </div>
-
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">
-          Performance Trend
-        </h3>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-                stroke="#f3f4f6"
-              />
-              <XAxis
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#9ca3af", fontSize: 12 }}
-                dy={10}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#9ca3af", fontSize: 12 }}
-              />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "12px",
-                  border: "none",
-                  boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="score"
-                stroke="#3b82f6"
-                strokeWidth={4}
-                dot={{ r: 6, fill: "#3b82f6", strokeWidth: 2, stroke: "#fff" }}
-                activeDot={{ r: 8, strokeWidth: 0 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">
+            Performance Overview
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data}
+                layout="vertical"
+                margin={{ left: 20, right: 30 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal={true}
+                  vertical={false}
+                  stroke="#f1f5f9"
+                />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#475569", fontSize: 13, fontWeight: 500 }}
+                />
+                <Tooltip
+                  cursor={{ fill: "#f8fafc" }}
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "none",
+                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                  }}
+                />
+                <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={32}>
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-bold text-gray-900">Recent Worksheet Results</h3>
-          <button className="text-sm text-blue-600 font-medium">
-            View Full History
-          </button>
+        <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+          <h3 className="text-xl font-bold mb-4">Teacher's Note</h3>
+          <p className="text-blue-100 leading-relaxed mb-6">
+            "Your child is showing exceptional progress in mental math accuracy.
+            We recommend focusing slightly more on completion speed for the next
+            week to bridge the gap."
+          </p>
+          <div className="pt-6 border-t border-blue-400 capitalize">
+            <div className="text-sm text-blue-200">Last Assessment</div>
+            <div className="text-lg font-semibold">February 24, 2026</div>
+          </div>
         </div>
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase">
-            <tr>
-              <th className="px-6 py-4">Worksheet</th>
-              <th className="px-6 py-4 text-center">Score</th>
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-sm">
-            <tr>
-              <td className="px-6 py-4 font-medium">B-10: Multiplication</td>
-              <td className="px-6 py-4 text-center text-green-600 font-bold">
-                92
-              </td>
-              <td className="px-6 py-4 text-gray-500">Feb 22, 2024</td>
-              <td className="px-6 py-4 text-gray-500">
-                <Badge variant="green">Graded</Badge>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4 font-medium">B-09: Division Intro</td>
-              <td className="px-6 py-4 text-center text-green-600 font-bold">
-                85
-              </td>
-              <td className="px-6 py-4 text-gray-500">Feb 18, 2024</td>
-              <td className="px-6 py-4 text-gray-500">
-                <Badge variant="green">Graded</Badge>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   );

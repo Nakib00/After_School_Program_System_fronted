@@ -7,8 +7,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
 } from "recharts";
 
 const MyProgress = () => {
@@ -27,22 +25,49 @@ const MyProgress = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">
             Score History
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f1f5f9"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#94a3b8", fontSize: 12 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#94a3b8", fontSize: 12 }}
+                  domain={[0, 100]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "none",
+                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                  }}
+                />
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="#2563eb"
+                  stroke="#3b82f6"
                   strokeWidth={3}
-                  dot={{ r: 6, fill: "#2563eb" }}
+                  dot={{
+                    r: 6,
+                    fill: "#3b82f6",
+                    strokeWidth: 2,
+                    stroke: "#fff",
+                  }}
+                  activeDot={{ r: 8, strokeWidth: 0 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -50,7 +75,7 @@ const MyProgress = () => {
         </div>
 
         <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">
             Level Progression
           </h3>
           <div className="space-y-4">
@@ -58,11 +83,11 @@ const MyProgress = () => {
               <span>Level B Progress</span>
               <span>145 / 200 Worksheets</span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
-              <div className="bg-blue-600 h-full w-[72.5%] rounded-full shadow-inner animate-pulse transition-all"></div>
+            <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full w-[72.5%] rounded-full shadow-inner transition-all duration-1000"></div>
             </div>
-            <p className="text-xs text-gray-500 text-center italic">
-              Keep going! You're 55 worksheets away from Level C!
+            <p className="text-xs text-slate-500 text-center italic mt-4">
+              Keep going! You're only 55 worksheets away from starting Level C!
             </p>
           </div>
         </div>

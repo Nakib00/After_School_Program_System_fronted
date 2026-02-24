@@ -36,7 +36,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         path: "/super-admin/dashboard",
       },
       { name: "Centers", icon: Building2, path: "/super-admin/centers" },
+      {
+        name: "Center Admins",
+        icon: Users,
+        path: "/super-admin/center-admins",
+      },
       { name: "Students", icon: Users, path: "/super-admin/students" },
+      { name: "Parents", icon: Users, path: "/super-admin/parents" },
       { name: "Teachers", icon: GraduationCap, path: "/super-admin/teachers" },
       { name: "Subjects", icon: BookOpen, path: "/super-admin/subjects" },
       { name: "Levels", icon: ListTodo, path: "/super-admin/levels" },
@@ -62,7 +68,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       { name: "Grade Submissions", icon: CheckSquare, path: "/teacher/grade" },
       { name: "Attendance", icon: Calendar, path: "/teacher/attendance" },
     ],
-    parent: [
+    parents: [
       { name: "Dashboard", icon: LayoutDashboard, path: "/parent/dashboard" },
       { name: "Child Progress", icon: TrendingUp, path: "/parent/progress" },
       { name: "Assignments", icon: ClipboardList, path: "/parent/assignments" },

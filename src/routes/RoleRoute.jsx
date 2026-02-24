@@ -12,7 +12,7 @@ const RoleRoute = ({ allowedRoles }) => {
       super_admin: "/super-admin/dashboard",
       center_admin: "/center-admin/dashboard",
       teacher: "/teacher/dashboard",
-      parent: "/parent/dashboard",
+      parents: "/parent/dashboard",
       student: "/student/dashboard",
     };
     return <Navigate to={dashboardMap[user.role] || "/login"} replace />;

@@ -20,6 +20,8 @@ const Subjects = lazy(() => import("../pages/super_admin/Subjects"));
 const Levels = lazy(() => import("../pages/super_admin/Levels"));
 const SuperAdminFees = lazy(() => import("../pages/super_admin/Fees"));
 const SuperAdminReports = lazy(() => import("../pages/super_admin/Reports"));
+const CenterAdmins = lazy(() => import("../pages/super_admin/CenterAdmins"));
+const Parents = lazy(() => import("../pages/super_admin/Parents"));
 
 // Center Admin Pages
 const CenterAdminDashboard = lazy(
@@ -99,6 +101,11 @@ const AppRoutes = () => {
                 path="/super-admin/reports"
                 element={<SuperAdminReports />}
               />
+              <Route
+                path="/super-admin/center-admins"
+                element={<CenterAdmins />}
+              />
+              <Route path="/super-admin/parents" element={<Parents />} />
             </Route>
 
             {/* Center Admin Routes */}
@@ -139,7 +146,7 @@ const AppRoutes = () => {
             </Route>
 
             {/* Parent Routes */}
-            <Route element={<RoleRoute allowedRoles={["parent"]} />}>
+            <Route element={<RoleRoute allowedRoles={["parents"]} />}>
               <Route path="/parent/dashboard" element={<ParentDashboard />} />
               <Route path="/parent/progress" element={<ChildProgress />} />
               <Route

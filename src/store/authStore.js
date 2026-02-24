@@ -7,10 +7,17 @@ export const useAuthStore = create((set) => ({
     isAuthenticated: !!localStorage.getItem('token'),
 
     login: async (email, password) => {
-        const { data } = await authService.login({ email, password });
-        localStorage.setItem('token', data.token);
-        set({ user: data.user, token: data.token, isAuthenticated: true });
-        return data.user;
+        try {
+            const { data: response } = await authService.login({ email, password });
+            // response is { status, message, data: { user, token } }
+            const { user, token } = response.data;
+            localStorage.setItem('token', token);
+            set({ user, token, isAuthenticated: true });
+            return user;
+        } catch (error) {
+            console.error('[Login Error]', error);
+            throw error;
+        }
     },
 
     logout: async () => {

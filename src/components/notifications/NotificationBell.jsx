@@ -8,9 +8,10 @@ const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    // Polling disabled as backend lacks notifications
+    // fetchUnreadCount();
+    // const interval = setInterval(fetchUnreadCount, 30000);
+    // return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
   return (

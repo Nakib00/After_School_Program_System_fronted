@@ -7,42 +7,21 @@ export const useNotificationStore = create((set, get) => ({
     loading: false,
 
     fetchNotifications: async () => {
-        set({ loading: true });
-        try {
-            const { data } = await notificationService.getAll();
-            set({ notifications: data, loading: false });
-        } catch (error) {
-            set({ loading: false });
-        }
+        // Mocking for now as backend lacks notifications
+        set({ notifications: [], loading: false });
     },
 
     fetchUnreadCount: async () => {
-        try {
-            const { data } = await notificationService.getUnreadCount();
-            set({ unreadCount: data.count });
-        } catch (error) { }
+        // Mocking for now as backend lacks notifications
+        set({ unreadCount: 0 });
     },
 
     markAsRead: async (id) => {
-        try {
-            await notificationService.markAsRead(id);
-            set((state) => ({
-                notifications: state.notifications.map((n) =>
-                    n.id === id ? { ...n, read_at: new Date().toISOString() } : n
-                ),
-                unreadCount: Math.max(0, state.unreadCount - 1),
-            }));
-        } catch (error) { }
+        // No-op - backend lacks notifications
     },
 
     markAllAsRead: async () => {
-        try {
-            await notificationService.markAllAsRead();
-            set((state) => ({
-                notifications: state.notifications.map((n) => ({ ...n, read_at: new Date().toISOString() })),
-                unreadCount: 0,
-            }));
-        } catch (error) { }
+        // No-op - backend lacks notifications
     },
 
     addToast: (message, type = 'success') => {
