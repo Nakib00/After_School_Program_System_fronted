@@ -19,7 +19,7 @@ const ForgotPassword = () => {
             <input
               type="email"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-              placeholder="admin@kumon.com"
+              placeholder="admin@zanlms.com"
             />
           </div>
           <button

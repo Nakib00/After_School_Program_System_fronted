@@ -53,7 +53,7 @@ const Login = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
         <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-gray-900">Login to LMS</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Login to ZAN LMS</h2>
           <p className="text-gray-500 mt-2">
             Enter your credentials to access your account
           </p>

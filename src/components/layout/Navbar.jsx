@@ -17,7 +17,7 @@ const Navbar = ({ toggleSidebar }) => {
           <Menu className="w-6 h-6" />
         </button>
         <h1 className="text-lg font-semibold text-gray-800 md:hidden">
-          Kumon LMS
+          ZAN LMS
         </h1>
       </div>
 
