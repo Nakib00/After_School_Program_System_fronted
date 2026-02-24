@@ -2,8 +2,10 @@ import api from './axiosInstance';
 import { SUBJECTS } from './apiEndpoints';
 
 export const subjectService = {
-    getAll: (params) => api.get(SUBJECTS.LIST, { params }),
+    getAllActive: () => api.get(SUBJECTS.LIST),
+    getAll: () => api.get(SUBJECTS.ALL),
+    getById: (id) => api.get(SUBJECTS.DETAIL(id)),
     create: (data) => api.post(SUBJECTS.CREATE, data),
     update: (id, data) => api.put(SUBJECTS.UPDATE(id), data),
-    delete: (id) => api.delete(SUBJECTS.DELETE(id)),
+    toggleStatus: (id) => api.patch(SUBJECTS.TOGGLE(id)),
 };

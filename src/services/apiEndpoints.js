@@ -46,17 +46,20 @@ export const TEACHERS = {
 };
 
 export const SUBJECTS = {
-    LIST: `${API_BASE}/subjects`,
-    CREATE: `${API_BASE}/subjects`,
-    UPDATE: (id) => `${API_BASE}/subjects/${id}`,
-    DELETE: (id) => `${API_BASE}/subjects/${id}`,
+    LIST: `${API_BASE}/subject`,
+    ALL: `${API_BASE}/subject/all`,
+    CREATE: `${API_BASE}/subject`,
+    DETAIL: (id) => `${API_BASE}/subject/${id}`,
+    UPDATE: (id) => `${API_BASE}/subject/${id}`,
+    TOGGLE: (id) => `${API_BASE}/subject/${id}/toggle-status`,
 };
 
 export const LEVELS = {
-    LIST: `${API_BASE}/levels`,
-    CREATE: `${API_BASE}/levels`,
-    UPDATE: (id) => `${API_BASE}/levels/${id}`,
-    DELETE: (id) => `${API_BASE}/levels/${id}`,
+    LIST: `${API_BASE}/level`,
+    CREATE: `${API_BASE}/level`,
+    DETAIL: (id) => `${API_BASE}/level/${id}`,
+    UPDATE: (id) => `${API_BASE}/level/${id}`,
+    DELETE: (id) => `${API_BASE}/level/${id}`,
 };
 
 export const WORKSHEETS = {
