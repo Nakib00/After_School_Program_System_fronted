@@ -47,7 +47,7 @@ const Parents = () => {
     try {
       setLoading(true);
       const { data } = await adminService.getParents();
-      setParents(data.data);
+      setParents(data.data || data); // Handle both wrapped and unwrapped data
     } catch (error) {
       console.error("Failed to fetch parents:", error);
       toast.error("Failed to load parents");
@@ -63,12 +63,15 @@ const Parents = () => {
   const onSubmit = async (data) => {
     try {
       setSubmitting(true);
-      const payload = { ...data, role: "parents" };
 
       const formData = new FormData();
-      Object.keys(payload).forEach((key) => {
-        if (payload[key]) formData.append(key, payload[key]);
-      });
+      formData.append("name", data.name);
+      formData.append("email", data.email);
+      formData.append("password", data.password);
+      formData.append("password_confirmation", data.password_confirmation);
+      formData.append("role", "parent");
+      if (data.phone) formData.append("phone", data.phone);
+      if (data.address) formData.append("address", data.address);
 
       if (profileImage) {
         formData.append("profile_image", profileImage);
@@ -82,7 +85,8 @@ const Parents = () => {
       fetchParents();
     } catch (error) {
       console.error("Registration failed:", error);
-      toast.error(error.response?.data?.message || "Registration failed");
+      const message = error.response?.data?.message || "Registration failed";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

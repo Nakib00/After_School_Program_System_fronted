@@ -7,4 +7,5 @@ export const adminService = {
     registerUser: (data) => api.post(AUTH.REGISTER, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
+    getStudents: () => api.get(STUDENTS.LIST),
 };

@@ -4,8 +4,13 @@ import { TEACHERS } from './apiEndpoints';
 export const teacherService = {
     getAll: (params) => api.get(TEACHERS.LIST, { params }),
     getById: (id) => api.get(TEACHERS.DETAIL(id)),
-    create: (data) => api.post(TEACHERS.CREATE, data),
-    update: (id, data) => api.put(TEACHERS.UPDATE(id), data),
+    create: (formData) => api.post(TEACHERS.CREATE, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    update: (id, formData) => api.post(`${TEACHERS.UPDATE(id)}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        params: { _method: 'PUT' } // Laravel trick to support multipart with PUT
+    }),
     getStudents: (id) => api.get(TEACHERS.STUDENTS(id)),
-    assignStudents: (id, studentIds) => api.post(TEACHERS.ASSIGN_STUDENTS(id), { student_ids: studentIds }),
+    assignStudents: (data) => api.post(TEACHERS.ASSIGN_STUDENTS, data),
 };
