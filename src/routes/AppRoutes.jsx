@@ -60,6 +60,9 @@ const MyAssignments = lazy(() => import("../pages/student/MyAssignments"));
 const SubmitWork = lazy(() => import("../pages/student/SubmitWork"));
 const MyProgress = lazy(() => import("../pages/student/MyProgress"));
 
+// Shared Pages
+const Profile = lazy(() => import("../pages/Profile"));
+
 const AppRoutes = () => {
   return (
     <Suspense
@@ -78,6 +81,9 @@ const AppRoutes = () => {
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<Navigate to="/login" replace />} />
+
+            {/* Shared Route for all authenticated users */}
+            <Route path="/profile" element={<Profile />} />
 
             {/* Super Admin Routes */}
             <Route element={<RoleRoute allowedRoles={["super_admin"]} />}>

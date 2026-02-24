@@ -8,4 +8,5 @@ export const centerService = {
     update: (id, data) => api.put(CENTERS.UPDATE(id), data),
     delete: (id) => api.delete(CENTERS.DELETE(id)),
     getStats: (id) => api.get(CENTERS.STATS(id)),
+    getAdmins: () => api.get(CENTERS.ADMINS),
 };
