@@ -25,15 +25,15 @@ export const CENTERS = {
 };
 
 export const STUDENTS = {
-    LIST: `${API_BASE}/students`,
-    CREATE: `${API_BASE}/students`,
-    DETAIL: (id) => `${API_BASE}/students/${id}`,
-    UPDATE: (id) => `${API_BASE}/students/${id}`,
-    DELETE: (id) => `${API_BASE}/students/${id}`,
-    PROGRESS: (id) => `${API_BASE}/students/${id}/progress`,
-    ASSIGNMENTS: (id) => `${API_BASE}/students/${id}/assignments`,
-    ATTENDANCE: (id) => `${API_BASE}/students/${id}/attendance`,
-    FEES: (id) => `${API_BASE}/students/${id}/fees`,
+    LIST: `${API_BASE}/student`,
+    CREATE: `${API_BASE}/student`,
+    DETAIL: (id) => `${API_BASE}/student/${id}`,
+    UPDATE: (id) => `${API_BASE}/student/${id}`,
+    DELETE: (id) => `${API_BASE}/student/${id}`,
+    PROGRESS: (id) => `${API_BASE}/student/${id}/progress`,
+    ASSIGNMENTS: (id) => `${API_BASE}/student/${id}/assignments`,
+    ATTENDANCE: (id) => `${API_BASE}/student/${id}/attendance`,
+    FEES: (id) => `${API_BASE}/student/${id}/fees`,
 };
 
 export const TEACHERS = {
