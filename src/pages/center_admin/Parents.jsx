@@ -1,16 +1,16 @@
 import React from "react";
-import TeacherModule from "../../modules/teachers/TeacherModule";
+import ParentModule from "../../modules/parents/ParentModule";
 import { useAuthStore } from "../../store/authStore";
 
-const CenterAdminTeachers = () => {
+const CenterAdminParents = () => {
   const { user } = useAuthStore();
 
   return (
-    <TeacherModule
+    <ParentModule
       role="center_admin"
       initialFilters={{ center_id: user?.center_id }}
     />
   );
 };
 
-export default CenterAdminTeachers;
+export default CenterAdminParents;

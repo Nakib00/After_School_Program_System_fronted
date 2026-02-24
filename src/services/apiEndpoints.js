@@ -22,6 +22,9 @@ export const CENTERS = {
     STATS: (id) => `${API_BASE}/center/stats/${id}`,
     ADMINS: `${API_BASE}/center-admins`,
     PARENTS: `${API_BASE}/parents`,
+    PARENT_DETAIL: (id) => `${API_BASE}/parents/${id}`,
+    PARENT_UPDATE: (id) => `${API_BASE}/parents/${id}`,
+    PARENT_DELETE: (id) => `${API_BASE}/parents/${id}`,
 };
 
 export const STUDENTS = {

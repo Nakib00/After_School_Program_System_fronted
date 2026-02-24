@@ -38,6 +38,7 @@ const CenterAdminAttendance = lazy(
 );
 const CenterAdminFees = lazy(() => import("../pages/center_admin/Fees"));
 const CenterAdminReports = lazy(() => import("../pages/center_admin/Reports"));
+const CenterAdminParents = lazy(() => import("../pages/center_admin/Parents"));
 
 // Teacher Pages
 const TeacherDashboard = lazy(() => import("../pages/teacher/Dashboard"));
@@ -136,6 +137,10 @@ const AppRoutes = () => {
               <Route
                 path="/center-admin/reports"
                 element={<CenterAdminReports />}
+              />
+              <Route
+                path="/center-admin/parents"
+                element={<CenterAdminParents />}
               />
             </Route>
 

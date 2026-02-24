@@ -56,6 +56,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         path: "/center-admin/dashboard",
       },
       { name: "Students", icon: Users, path: "/center-admin/students" },
+      { name: "Parents", icon: Users, path: "/center-admin/parents" },
       { name: "Teachers", icon: GraduationCap, path: "/center-admin/teachers" },
       { name: "Attendance", icon: Calendar, path: "/center-admin/attendance" },
       { name: "Fees", icon: DollarSign, path: "/center-admin/fees" },

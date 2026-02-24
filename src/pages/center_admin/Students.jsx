@@ -1,12 +1,17 @@
 import React from "react";
+import StudentModule from "../../modules/students/StudentModule";
+import { useAuthStore } from "../../store/authStore";
+import Spinner from "../../components/ui/Spinner";
 
-const CenterAdminStudents = () => (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-gray-900">Branch Students</h2>
-    <div className="p-8 bg-white rounded-xl shadow-sm border border-gray-100 text-center text-gray-500">
-      Center-specific student list placeholder
-    </div>
-  </div>
-);
+const CenterAdminStudents = () => {
+  const { user } = useAuthStore();
+
+  return (
+    <StudentModule
+      role="center_admin"
+      initialFilters={{ center_id: user?.center_id }}
+    />
+  );
+};
 
 export default CenterAdminStudents;
