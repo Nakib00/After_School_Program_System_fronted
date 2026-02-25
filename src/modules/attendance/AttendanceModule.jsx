@@ -1,59 +1,75 @@
 import React, { useState, useEffect } from "react";
 import {
-  Check,
-  X,
-  AlertCircle,
   Calendar,
   User,
-  Search,
   CheckCircle2,
-  XCircle,
   Clock,
+  Search,
   Filter,
+  Users,
+  CheckSquare,
+  History,
+  AlertCircle,
+  Save,
+  ChevronLeft,
+  ChevronRight,
+  UserCheck,
+  UserMinus,
+  UserX,
 } from "lucide-react";
 import DataTable from "../../components/ui/DataTable";
 import Badge from "../../components/ui/Badge";
 import Spinner from "../../components/ui/Spinner";
+import Modal from "../../components/ui/Modal";
 import { attendanceService } from "../../services/attendanceService";
-import { studentService } from "../../services/studentService";
+import { teacherService } from "../../services/teacherService";
+import { useAuthStore } from "../../store/authStore";
 import { toast } from "react-hot-toast";
 
-const AttendanceModule = ({ role = "teacher", initialFilters = {} }) => {
-  const [students, setStudents] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+const AttendanceModule = ({ role = "teacher" }) => {
+  const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState("mark"); // "mark" or "history"
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Mark Tab State
+  const [students, setStudents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
   );
-  const [viewMode, setViewMode] = useState(
-    role === "teacher" ? "mark" : "view",
-  ); // mark or view
+  const [attendanceData, setAttendanceData] = useState({}); // { studentId: { status, notes } }
+
+  // History Tab State
+  const [history, setHistory] = useState([]);
+  const [filterMonth, setFilterMonth] = useState(
+    new Date().toISOString().slice(0, 7),
+  ); // YYYY-MM
 
   const fetchData = async () => {
+    if (!user?.id) return;
+
     try {
       setLoading(true);
-      const params = { ...initialFilters, date: selectedDate };
+      if (activeTab === "mark") {
+        const studentsRes = await teacherService.getStudents(user.id);
+        const studentList = studentsRes.data.data || [];
+        setStudents(studentList);
 
-      if (viewMode === "mark") {
-        // Use standard student API for all roles
-        const response = await studentService.getAll(params);
-
-        const studentData = response.data;
-        const studentList = Array.isArray(studentData?.data)
-          ? studentData.data
-          : Array.isArray(studentData)
-            ? studentData
-            : [];
-
-        setStudents(studentList.map((s) => ({ ...s, status: "present" })));
+        // Initialize attendance data with 'present' by default
+        const initial = {};
+        studentList.forEach((s) => {
+          initial[s.id] = { status: "present", notes: "" };
+        });
+        setAttendanceData(initial);
       } else {
-        const { data } = await attendanceService.getAll(params);
-        setLogs(data.data || []);
+        const historyRes = await attendanceService.getAll({
+          month: filterMonth,
+        });
+        setHistory(historyRes.data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch attendance data:", error);
-      toast.error("Failed to load attendance data");
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -61,53 +77,87 @@ const AttendanceModule = ({ role = "teacher", initialFilters = {} }) => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedDate, viewMode, JSON.stringify(initialFilters)]);
+  }, [activeTab, user?.id, filterMonth]);
 
-  const markStatus = (id, status) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s)),
-    );
+  const handleStatusChange = (studentId, status) => {
+    setAttendanceData((prev) => ({
+      ...prev,
+      [studentId]: { ...prev[studentId], status },
+    }));
   };
 
-  const handleBulkSubmit = async () => {
+  const handleNotesChange = (studentId, notes) => {
+    setAttendanceData((prev) => ({
+      ...prev,
+      [studentId]: { ...prev[studentId], notes },
+    }));
+  };
+
+  const handleMarkBulk = async () => {
+    if (students.length === 0) return;
+
     try {
       setSubmitting(true);
-      const records = students.map((s) => ({
-        student_id: s.id,
-        status: s.status,
+      // Assuming teacher's first student's center_id is the reference for the center
+      const centerId = students[0]?.center_id;
+
+      const payload = {
+        center_id: centerId,
         date: selectedDate,
-      }));
-      await attendanceService.mark({ attendance: records });
-      toast.success("Attendance submitted successfully");
-      if (role !== "teacher") setViewMode("view");
+        attendance: Object.entries(attendanceData).map(([studentId, data]) => ({
+          student_id: parseInt(studentId),
+          status: data.status,
+          notes: data.notes,
+        })),
+      };
+
+      await attendanceService.markBulk(payload);
+      toast.success("Attendance marked successfully");
     } catch (error) {
-      toast.error("Failed to submit attendance");
+      console.error("Failed to mark attendance:", error);
+      toast.error(error.response?.data?.message || "Failed to mark attendance");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const columns = [
+  const historyColumns = [
     {
       header: "Date",
       accessorKey: "date",
-      cell: ({ getValue }) => new Date(getValue()).toLocaleDateString(),
+      cell: ({ getValue }) => (
+        <div className="font-medium text-gray-900">
+          {new Date(getValue()).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </div>
+      ),
     },
     {
       header: "Student",
-      accessorKey: "student.name",
+      accessorKey: "student.user.name",
       cell: ({ row }) => (
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2 text-gray-400">
-            <User size={14} />
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-50 overflow-hidden flex items-center justify-center text-indigo-600 border border-indigo-100">
+            {row.original.student?.user?.profile_photo_path ? (
+              <img
+                src={row.original.student.user.profile_photo_path}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User size={14} />
+            )}
           </div>
           <div>
-            <div className="font-semibold text-gray-900">
-              {row.original.student?.name}
-            </div>
-            <div className="text-[10px] text-gray-500 font-bold uppercase">
-              {row.original.student?.enrollment_no}
-            </div>
+            <p className="text-sm font-semibold text-gray-900">
+              {row.original.student?.user?.name}
+            </p>
+            <p className="text-[10px] text-gray-500">
+              ID: {row.original.student?.enrollment_no || "N/A"}
+            </p>
           </div>
         </div>
       ),
@@ -116,177 +166,275 @@ const AttendanceModule = ({ role = "teacher", initialFilters = {} }) => {
       header: "Status",
       accessorKey: "status",
       cell: ({ getValue }) => {
-        const status = getValue()?.toLowerCase() || "absent";
-        const variant =
-          status === "present"
-            ? "green"
-            : status === "absent"
-              ? "red"
-              : "orange";
-        return <Badge variant={variant}>{status}</Badge>;
+        const val = getValue();
+        const colors = { present: "green", absent: "red", late: "yellow" };
+        return (
+          <Badge variant={colors[val] || "gray"}>
+            {val.charAt(0).toUpperCase() + val.slice(1)}
+          </Badge>
+        );
       },
     },
+    {
+      header: "Notes",
+      accessorKey: "notes",
+      cell: ({ getValue }) => (
+        <span className="text-sm text-gray-500 italic max-w-xs truncate block">
+          {getValue() || "—"}
+        </span>
+      ),
+    },
   ];
-
-  if (viewMode === "mark") {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Mark Attendance
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Daily attendance tracking for assigned students
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            {role !== "teacher" && (
-              <button
-                onClick={() => setViewMode("view")}
-                className="px-4 py-2 border rounded-xl hover:bg-gray-50 font-semibold text-gray-600"
-              >
-                View Logs
-              </button>
-            )}
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl outline-none font-medium"
-            />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {loading ? (
-            <div className="p-20 text-center">
-              <Spinner size="lg" />
-            </div>
-          ) : students.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
-                      Student Information
-                    </th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">
-                      Current Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {students.map((student) => (
-                    <tr
-                      key={student.id}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                            <User size={18} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-900">
-                              {student.name}
-                            </p>
-                            <p className="text-xs text-gray-500 font-medium">
-                              {student.enrollment_no}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center space-x-3">
-                          {[
-                            { val: "present", icon: Check, color: "green" },
-                            { val: "absent", icon: X, color: "red" },
-                            { val: "late", icon: Clock, color: "orange" },
-                          ].map((b) => (
-                            <button
-                              key={b.val}
-                              onClick={() => markStatus(student.id, b.val)}
-                              className={`p-2.5 rounded-xl border-2 transition-all flex items-center justify-center ${
-                                student.status === b.val
-                                  ? `bg-${b.color}-50 border-${b.color}-500 text-${b.color}-600 shadow-sm`
-                                  : "bg-gray-50 border-gray-200 text-gray-400 hover:border-gray-300"
-                              }`}
-                              title={b.val.toUpperCase()}
-                            >
-                              <b.icon size={20} strokeWidth={3} />
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-20 text-center text-gray-500 italic font-medium">
-              No students found for attendance marking.
-            </div>
-          )}
-        </div>
-
-        {students.length > 0 && (
-          <div className="flex justify-end pt-4">
-            <button
-              onClick={handleBulkSubmit}
-              disabled={submitting}
-              className="px-10 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center"
-            >
-              {submitting ? (
-                <Spinner size="sm" className="mr-2" />
-              ) : (
-                <CheckCircle2 size={20} className="mr-2" />
-              )}
-              Submit Daily Attendance
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Attendance History
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">Attendance</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Review attendance logs and performance metrics
+            Track and manage student daily attendance
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+
+        <div className="flex p-1 bg-gray-100 rounded-xl overflow-hidden w-fit">
           <button
-            onClick={() => setViewMode("mark")}
-            className="px-4 py-2.5 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 font-bold flex items-center"
+            onClick={() => setActiveTab("mark")}
+            className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "mark"
+                ? "bg-white text-indigo-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
           >
-            <CheckCircle2 size={18} className="mr-2" /> Mark Attendance
+            <CheckSquare size={16} className="mr-2" />
+            Mark Today
           </button>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-semibold text-gray-700"
-          />
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "history"
+                ? "bg-white text-indigo-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <History size={16} className="mr-2" />
+            History
+          </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="p-20 text-center">
-            <Spinner size="lg" />
+      {activeTab === "mark" ? (
+        <div className="space-y-6">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+            <div className="flex items-center text-gray-700 bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
+              <Calendar size={18} className="mr-2 text-indigo-500" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                max={new Date().toISOString().split("T")[0]}
+                className="bg-transparent outline-none font-semibold text-sm"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 text-sm text-gray-500 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
+              <Users size={16} className="text-indigo-600" />
+              <span className="font-bold text-indigo-900">
+                {students.length}
+              </span>
+              <span>Assigned Students</span>
+            </div>
           </div>
-        ) : (
-          <DataTable columns={columns} data={logs} />
-        )}
-      </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {loading ? (
+              <div className="p-20 text-center">
+                <Spinner size="lg" />
+              </div>
+            ) : students.length === 0 ? (
+              <div className="p-20 text-center">
+                <Users size={48} className="mx-auto text-gray-200 mb-4" />
+                <p className="text-gray-500">
+                  No students found assigned to you.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Student
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Notes (Optional)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {students.map((student) => (
+                        <tr
+                          key={student.id}
+                          className="hover:bg-gray-50/50 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 rounded-full bg-indigo-100 overflow-hidden flex items-center justify-center text-indigo-600 font-bold border border-white shadow-sm">
+                                {student.user?.profile_photo_path ? (
+                                  <img
+                                    src={student.user.profile_photo_path}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  student.user?.name?.charAt(0)
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-bold text-gray-900">
+                                  {student.user?.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {student.current_level} Level
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              {[
+                                {
+                                  id: "present",
+                                  icon: UserCheck,
+                                  color: "text-green-600",
+                                  bg: "bg-green-50",
+                                  border: "border-green-200",
+                                },
+                                {
+                                  id: "late",
+                                  icon: Clock,
+                                  color: "text-yellow-600",
+                                  bg: "bg-yellow-50",
+                                  border: "border-yellow-200",
+                                },
+                                {
+                                  id: "absent",
+                                  icon: UserX,
+                                  color: "text-red-600",
+                                  bg: "bg-red-50",
+                                  border: "border-red-200",
+                                },
+                              ].map((status) => (
+                                <button
+                                  key={status.id}
+                                  onClick={() =>
+                                    handleStatusChange(student.id, status.id)
+                                  }
+                                  className={`p-2 rounded-xl border-2 transition-all flex flex-col items-center min-w-[64px] ${
+                                    attendanceData[student.id]?.status ===
+                                    status.id
+                                      ? `${status.bg} ${status.border} ${status.color} scale-105 shadow-sm`
+                                      : "bg-white border-transparent text-gray-400 grayscale opacity-60"
+                                  }`}
+                                >
+                                  <status.icon size={20} />
+                                  <span className="text-[10px] font-bold mt-1 uppercase">
+                                    {status.id}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <input
+                              type="text"
+                              value={attendanceData[student.id]?.notes || ""}
+                              onChange={(e) =>
+                                handleNotesChange(student.id, e.target.value)
+                              }
+                              placeholder="Reason for absence..."
+                              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+                  <button
+                    onClick={handleMarkBulk}
+                    disabled={submitting || students.length === 0}
+                    className="flex items-center px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                  >
+                    {submitting ? (
+                      <>
+                        <Spinner size="sm" className="mr-2" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} className="mr-2" />
+                        Mark Attendance
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center space-x-2">
+              <Filter size={18} className="text-gray-400" />
+              <span className="text-sm font-bold text-gray-600">
+                Filter By Month:
+              </span>
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-xs text-gray-500 font-medium">
+                  Present
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <span className="text-xs text-gray-500 font-medium">Late</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-xs text-gray-500 font-medium">
+                  Absent
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {loading ? (
+              <div className="p-20 text-center">
+                <Spinner size="lg" />
+              </div>
+            ) : (
+              <DataTable columns={historyColumns} data={history} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

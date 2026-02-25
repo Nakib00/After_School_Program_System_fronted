@@ -75,26 +75,28 @@ export const WORKSHEETS = {
 };
 
 export const ASSIGNMENTS = {
-    LIST: `${API_BASE}/assignments`,
-    CREATE: `${API_BASE}/assignments`,
-    BULK_CREATE: `${API_BASE}/assignments/bulk`,
-    DETAIL: (id) => `${API_BASE}/assignments/${id}`,
-    UPDATE: (id) => `${API_BASE}/assignments/${id}`,
-    DELETE: (id) => `${API_BASE}/assignments/${id}`,
+    LIST: `${API_BASE}/assignment`,
+    CREATE: `${API_BASE}/assignment`,
+    BULK_CREATE: `${API_BASE}/assignment/bulk`,
+    DETAIL: (id) => `${API_BASE}/assignment/${id}`,
+    UPDATE: (id) => `${API_BASE}/assignment/${id}`,
+    DELETE: (id) => `${API_BASE}/assignment/${id}`,
 };
 
 export const SUBMISSIONS = {
-    LIST: `${API_BASE}/submissions`,
-    CREATE: `${API_BASE}/submissions`,
-    BY_ASSIGNMENT: (assignmentId) => `${API_BASE}/submissions/${assignmentId}`,
-    GRADE: (id) => `${API_BASE}/submissions/${id}/grade`,
+    LIST: `${API_BASE}/submission`,
+    CREATE: `${API_BASE}/submission`,
+    DETAIL: (id) => `${API_BASE}/submission/${id}`,
+    BY_ASSIGNMENT: (assignmentId) => `${API_BASE}/submission/assignment/${assignmentId}`,
+    PENDING: `${API_BASE}/submission/pending`,
+    GRADE: (id) => `${API_BASE}/submission/${id}/grade`,
 };
 
 export const ATTENDANCE = {
     LIST: `${API_BASE}/attendance`,
-    MARK: `${API_BASE}/attendance/mark`,
+    MARK_BULK: `${API_BASE}/attendance/bulk`,
     UPDATE: (id) => `${API_BASE}/attendance/${id}`,
-    REPORT: `${API_BASE}/attendance/report`,
+    SUMMARY: `${API_BASE}/attendance/summary`,
     TODAY: `${API_BASE}/attendance/today`,
 };
 

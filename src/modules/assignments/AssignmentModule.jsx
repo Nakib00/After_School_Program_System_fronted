@@ -200,8 +200,16 @@ const AssignmentModule = ({ role = "teacher" }) => {
         const student = row.original.student;
         return (
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-              <User size={16} />
+            <div className="w-8 h-8 rounded-full bg-indigo-100 overflow-hidden flex items-center justify-center text-indigo-600 border border-indigo-50 shadow-sm">
+              {student?.user?.profile_photo_path ? (
+                <img
+                  src={student.user.profile_photo_path}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={16} />
+              )}
             </div>
             <div>
               <p className="font-semibold text-gray-900">
