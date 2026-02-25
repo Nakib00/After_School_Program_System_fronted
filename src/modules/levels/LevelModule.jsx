@@ -49,15 +49,22 @@ const LevelModule = ({ role = "super_admin" }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [levelsRes, subjectsRes] = await Promise.all([
-        levelService.getAll(),
-        subjectService.getAllActive(),
-      ]);
-      setLevels(levelsRes.data.data || []);
-      setSubjects(subjectsRes.data.data || []);
+      if (role === "super_admin") {
+        const [levelsRes, subjectsRes] = await Promise.all([
+          levelService.getAll(),
+          subjectService.getAllActive(),
+        ]);
+        setLevels(levelsRes.data.data || []);
+        setSubjects(subjectsRes.data.data || []);
+      } else {
+        const levelsRes = await levelService.getAll();
+        setLevels(levelsRes.data.data || []);
+      }
     } catch (error) {
       console.error("Failed to fetch levels data:", error);
-      toast.error("Failed to load levels or subjects");
+      if (error.response?.status !== 401) {
+        toast.error("Failed to load levels or subjects");
+      }
     } finally {
       setLoading(false);
     }
@@ -182,15 +189,19 @@ const LevelModule = ({ role = "super_admin" }) => {
         </div>
       ),
     },
-  ];
+  ].filter((col) => role === "super_admin" || col.header !== "Actions");
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Level Management</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {role === "super_admin" ? "Level Management" : "Curriculum Levels"}
+          </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Configure curriculum levels for each subject
+            {role === "super_admin"
+              ? "Configure curriculum levels for each subject"
+              : "View defined levels and structure for academic subjects"}
           </p>
         </div>
         {role === "super_admin" && (

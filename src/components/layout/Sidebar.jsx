@@ -19,6 +19,7 @@ import {
   Clock,
   ListTodo,
   FileUp,
+  FileText,
   X,
   Menu,
 } from "lucide-react";
@@ -66,6 +67,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       { name: "Dashboard", icon: LayoutDashboard, path: "/teacher/dashboard" },
       { name: "My Students", icon: Users, path: "/teacher/students" },
       { name: "Subjects", icon: BookOpen, path: "/teacher/subjects" },
+      { name: "Levels", icon: ListTodo, path: "/teacher/levels" },
+      { name: "Worksheets", icon: FileText, path: "/teacher/worksheets" },
       { name: "Assignments", icon: BookOpen, path: "/teacher/assignments" },
       { name: "Grade Submissions", icon: CheckSquare, path: "/teacher/grade" },
       { name: "Attendance", icon: Calendar, path: "/teacher/attendance" },

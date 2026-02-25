@@ -66,12 +66,12 @@ export const LEVELS = {
 };
 
 export const WORKSHEETS = {
-    LIST: `${API_BASE}/worksheets`,
-    CREATE: `${API_BASE}/worksheets`,
-    DETAIL: (id) => `${API_BASE}/worksheets/${id}`,
-    UPDATE: (id) => `${API_BASE}/worksheets/${id}`,
-    DELETE: (id) => `${API_BASE}/worksheets/${id}`,
-    DOWNLOAD: (id) => `${API_BASE}/worksheets/${id}/download`,
+    LIST: `${API_BASE}/worksheet`,
+    CREATE: `${API_BASE}/worksheet`,
+    DETAIL: (id) => `${API_BASE}/worksheet/${id}`,
+    UPDATE: (id) => `${API_BASE}/worksheet/${id}`,
+    DELETE: (id) => `${API_BASE}/worksheet/${id}`,
+    DOWNLOAD: (id) => `${API_BASE}/worksheet/${id}/download`,
 };
 
 export const ASSIGNMENTS = {
