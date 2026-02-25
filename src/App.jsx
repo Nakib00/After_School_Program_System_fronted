@@ -10,23 +10,22 @@ function App() {
   const { fetchMe, isInitializing, user, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    console.log(
-      "[App] Mounting, isInitializing:",
-      isInitializing,
-      "hasToken:",
-      !!localStorage.getItem("token"),
-    );
-    fetchMe();
+    if (!!localStorage.getItem("token")) {
+      console.log("[App] Session detected, verifying...");
+      fetchMe().catch((err) =>
+        console.error("[App] fetchMe failed:", err.message),
+      );
+    } else {
+      console.log("[App] No session found");
+    }
   }, [fetchMe]);
 
-  console.log(
-    "[App] Rendering, isInitializing:",
-    isInitializing,
-    "user:",
-    !!user,
-    "auth:",
+  console.log("[App] rendered with state:", {
+    user: user?.name,
+    role: user?.role,
     isAuthenticated,
-  );
+    isInitializing,
+  });
 
   if (isInitializing) {
     return (

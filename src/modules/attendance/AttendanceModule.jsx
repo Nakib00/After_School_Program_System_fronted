@@ -23,13 +23,14 @@ import Spinner from "../../components/ui/Spinner";
 import Modal from "../../components/ui/Modal";
 import { attendanceService } from "../../services/attendanceService";
 import { teacherService } from "../../services/teacherService";
+import { studentService } from "../../services/studentService";
 import { useAuthStore } from "../../store/authStore";
 import { toast } from "react-hot-toast";
 
 const AttendanceModule = ({ role = "teacher" }) => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState(
-    role === "parents" ? "history" : "mark",
+    role === "teacher" ? "mark" : "history",
   ); // "mark" or "history"
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -54,9 +55,10 @@ const AttendanceModule = ({ role = "teacher" }) => {
     try {
       setLoading(true);
       const params = { month: filterMonth };
-
-      if (role === "center_admin" || role === "super_admin") {
-        params.center_id = user.center_id;
+      const centerId =
+        user?.center_id || user?.center?.id || user?.student?.center_id;
+      if (centerId) {
+        params.center_id = centerId;
       }
 
       if (activeTab === "mark") {
@@ -215,7 +217,7 @@ const AttendanceModule = ({ role = "teacher" }) => {
         </div>
 
         <div className="flex p-1 bg-gray-100 rounded-xl overflow-hidden w-fit">
-          {role !== "parents" && (
+          {role === "teacher" && (
             <button
               onClick={() => setActiveTab("mark")}
               className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -231,7 +233,7 @@ const AttendanceModule = ({ role = "teacher" }) => {
           <button
             onClick={() => setActiveTab("history")}
             className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              activeTab === "history" || role === "parents"
+              activeTab === "history" || role !== "teacher"
                 ? "bg-white text-indigo-600 shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
