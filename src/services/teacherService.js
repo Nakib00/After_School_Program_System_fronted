@@ -13,4 +13,6 @@ export const teacherService = {
     }),
     getStudents: (id) => api.get(TEACHERS.STUDENTS(id)),
     assignStudents: (data) => api.post(TEACHERS.ASSIGN_STUDENTS, data),
+    unassignStudents: (data) => api.post(TEACHERS.UNASSIGN_STUDENTS, data),
+    delete: (id) => api.delete(TEACHERS.DETAIL(id)),
 };

@@ -14,6 +14,7 @@ import {
   Users,
   FileCheck,
   Search,
+  UserMinus,
 } from "lucide-react";
 import DataTable from "../../components/ui/DataTable";
 import Badge from "../../components/ui/Badge";
@@ -140,11 +141,35 @@ const TeacherModule = ({ role = "super_admin", initialFilters = {} }) => {
     try {
       setSelectedTeacher(teacher);
       setIsDetailsModalOpen(true);
-      const { data } = await teacherService.getStudents(teacher.id);
+      const teacherUserId = teacher.user_id || teacher.user?.id || teacher.id;
+      const { data } = await teacherService.getStudents(teacherUserId);
       setAssignedStudents(data.data || []);
     } catch (error) {
       console.error("Failed to fetch teacher details:", error);
       toast.error("Failed to load teacher students");
+    }
+  };
+
+  const handleUnassign = async (studentId) => {
+    try {
+      if (!window.confirm("Are you sure you want to unassign this student?"))
+        return;
+      setSubmitting(true);
+      await teacherService.unassignStudents({ student_ids: [studentId] });
+      toast.success("Student unassigned successfully");
+
+      // Refresh student list for this teacher
+      const teacherUserId =
+        selectedTeacher.user_id ||
+        selectedTeacher.user?.id ||
+        selectedTeacher.id;
+      const { data } = await teacherService.getStudents(teacherUserId);
+      setAssignedStudents(data.data || []);
+    } catch (error) {
+      console.error("Unassign failed:", error);
+      toast.error("Failed to unassign student");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -188,6 +213,7 @@ const TeacherModule = ({ role = "super_admin", initialFilters = {} }) => {
   const confirmDelete = async () => {
     try {
       setSubmitting(true);
+      // Ensure we use teacher.id (teacher table PK)
       await teacherService.delete(selectedTeacher.id);
       toast.success("Teacher record removed");
       setIsDeleteModalOpen(false);
@@ -563,7 +589,7 @@ const TeacherModule = ({ role = "super_admin", initialFilters = {} }) => {
                   {assignedStudents.map((student) => (
                     <div
                       key={student.id}
-                      className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100"
+                      className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100 group"
                     >
                       <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center mr-3 border border-gray-200">
                         {student.user?.profile_photo_path ? (
@@ -584,6 +610,13 @@ const TeacherModule = ({ role = "super_admin", initialFilters = {} }) => {
                           Grade {student.grade} | Level {student.current_level}
                         </div>
                       </div>
+                      <button
+                        onClick={() => handleUnassign(student.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="Unassign student"
+                      >
+                        <UserMinus size={16} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -665,7 +698,8 @@ const TeacherAssignmentModal = ({ isOpen, onClose, teacher, onSuccess }) => {
       const { data } = await adminService.getStudents(params);
       setStudents(data.data || []);
 
-      const assignedRes = await teacherService.getStudents(teacher.id);
+      const teacherUserId = teacher.user_id || teacher.user?.id || teacher.id;
+      const assignedRes = await teacherService.getStudents(teacherUserId);
       setSelectedIds(assignedRes.data.data.map((s) => s.id));
     } catch (error) {
       console.error("Failed to fetch students:", error);
@@ -688,8 +722,9 @@ const TeacherAssignmentModal = ({ isOpen, onClose, teacher, onSuccess }) => {
   const handleSave = async () => {
     try {
       setSubmitting(true);
+      const teacherUserId = teacher.user_id || teacher.user?.id || teacher.id;
       await teacherService.assignStudents({
-        teacher_id: teacher.id,
+        teacher_id: teacherUserId,
         student_ids: selectedIds,
       });
       toast.success("Assignment updated");

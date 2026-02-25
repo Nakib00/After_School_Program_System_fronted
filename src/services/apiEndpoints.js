@@ -46,6 +46,7 @@ export const TEACHERS = {
     UPDATE: (id) => `${API_BASE}/teacher/${id}`,
     STUDENTS: (id) => `${API_BASE}/teacher/${id}/students`,
     ASSIGN_STUDENTS: `${API_BASE}/teacher/assign-students`,
+    UNASSIGN_STUDENTS: `${API_BASE}/teacher/unassign-students`,
 };
 
 export const SUBJECTS = {
