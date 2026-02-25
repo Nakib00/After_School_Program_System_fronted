@@ -36,15 +36,24 @@ const AttendanceModule = ({ role = "teacher", initialFilters = {} }) => {
       const params = { ...initialFilters, date: selectedDate };
 
       if (viewMode === "mark") {
-        const { data } = await studentService.getAll(params);
-        setStudents(data.data?.map((s) => ({ ...s, status: "present" })) || []);
+        // Use standard student API for all roles
+        const response = await studentService.getAll(params);
+
+        const studentData = response.data;
+        const studentList = Array.isArray(studentData?.data)
+          ? studentData.data
+          : Array.isArray(studentData)
+            ? studentData
+            : [];
+
+        setStudents(studentList.map((s) => ({ ...s, status: "present" })));
       } else {
         const { data } = await attendanceService.getAll(params);
         setLogs(data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch attendance data:", error);
-      toast.error("Failed to load data");
+      toast.error("Failed to load attendance data");
     } finally {
       setLoading(false);
     }

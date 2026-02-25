@@ -33,7 +33,7 @@ import * as z from "zod";
 import { toast } from "react-hot-toast";
 
 const studentSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "Full Name is required"),
   email: z.string().email("Invalid email address"),
   password: z
     .string()
@@ -49,6 +49,10 @@ const studentSchema = z.object({
   enrollment_date: z.string().optional(),
   subjects: z.array(z.string()).optional(),
   current_level: z.string().optional(),
+  status: z
+    .enum(["active", "inactive", "completed"])
+    .optional()
+    .default("active"),
 });
 
 const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
@@ -90,11 +94,25 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
       setLoading(true);
       const params = { ...initialFilters };
 
-      const fetchPromises = [
-        studentService.getAll(params),
-        teacherService.getAll(params),
-        adminService.getParents(params),
-      ];
+      let studentsPromise;
+      if (role === "teacher") {
+        const teacherId = initialFilters.teacher_id;
+        studentsPromise = teacherService.getStudents(teacherId);
+      } else {
+        studentsPromise = studentService.getAll(params);
+      }
+
+      const fetchPromises = [studentsPromise];
+
+      // Fetch dependencies for roles that can edit (Admins and Teachers)
+      if (role !== "student" && role !== "parents") {
+        fetchPromises.push(
+          teacherService.getAll(params).catch(() => ({ data: { data: [] } })),
+        );
+        fetchPromises.push(
+          adminService.getParents(params).catch(() => ({ data: { data: [] } })),
+        );
+      }
 
       if (role === "super_admin") {
         fetchPromises.push(centerService.getAll());
@@ -102,16 +120,27 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
 
       const results = await Promise.all(fetchPromises);
 
-      setStudents(results[0].data.data || []);
-      setTeachers(results[1].data.data || []);
-      setParents(results[2].data.data || []);
+      // result[0] is always students
+      const studentData = results[0]?.data;
+      const studentList = Array.isArray(studentData?.data)
+        ? studentData.data
+        : Array.isArray(studentData)
+          ? studentData
+          : [];
+
+      setStudents(studentList);
+
+      if (role !== "student" && role !== "parents") {
+        setTeachers(results[1]?.data?.data || []);
+        setParents(results[2]?.data?.data || []);
+      }
 
       if (role === "super_admin" && results[3]) {
-        setCenters(results[3].data.data || []);
+        setCenters(results[3]?.data?.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
-      toast.error("Failed to load students and dependencies");
+      toast.error("Failed to load students");
     } finally {
       setLoading(false);
     }
@@ -162,6 +191,7 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
         : "",
       subjects: student.subjects || [],
       current_level: student.current_level || "",
+      status: student.status || "active",
     });
     setIsModalOpen(true);
   };
@@ -176,21 +206,49 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
   const fetchStudentDetails = async (id) => {
     try {
       setDetailsLoading(true);
-      const [studentRes, assignmentsRes, attendanceRes, feesRes, progressRes] =
-        await Promise.all([
-          studentService.getById(id),
-          studentService.getAssignments(id),
-          studentService.getAttendance(id),
-          studentService.getFees(id),
-          studentService.getProgress(id),
-        ]);
+
+      // Fetch core student data first
+      const studentRes = await studentService.getById(id);
       setSelectedStudent(studentRes.data.data);
-      setAssignments(assignmentsRes.data.data || []);
-      setAttendance(attendanceRes.data.data || []);
-      setFees(feesRes.data.data || []);
-      setProgress(progressRes.data.data || []);
+
+      // Fetch other data in parallel, handling potential errors for restricted roles
+      const fetchPromises = [
+        studentService.getAssignments(id).catch((e) => {
+          console.error("Assignments fail", e);
+          return { data: { data: [] } };
+        }),
+        studentService.getAttendance(id).catch((e) => {
+          console.error("Attendance fail", e);
+          return { data: { data: [] } };
+        }),
+        studentService.getProgress(id).catch((e) => {
+          console.error("Progress fail", e);
+          return { data: { data: [] } };
+        }),
+      ];
+
+      // Only fetch fees if not a teacher
+      if (role !== "teacher") {
+        fetchPromises.push(
+          studentService.getFees(id).catch((e) => {
+            console.error("Fees fail", e);
+            return { data: { data: [] } };
+          }),
+        );
+      }
+
+      const results = await Promise.all(fetchPromises);
+
+      setAssignments(results[0]?.data?.data || []);
+      setAttendance(results[1]?.data?.data || []);
+      setProgress(results[2]?.data?.data || []);
+
+      if (role !== "teacher") {
+        setFees(results[3]?.data?.data || []);
+      }
     } catch (error) {
       console.error("Failed to fetch student details:", error);
+      toast.error("Failed to load student details");
     } finally {
       setDetailsLoading(false);
     }
@@ -319,18 +377,22 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
           >
             <Eye size={18} />
           </button>
-          <button
-            onClick={() => handleEdit(row.original)}
-            className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Edit size={18} />
-          </button>
-          <button
-            onClick={() => handleDeleteClick(row.original)}
-            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <Trash2 size={18} />
-          </button>
+          {(role === "super_admin" || role === "center_admin") && (
+            <button
+              onClick={() => handleEdit(row.original)}
+              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Edit size={18} />
+            </button>
+          )}
+          {(role === "super_admin" || role === "center_admin") && (
+            <button
+              onClick={() => handleDeleteClick(row.original)}
+              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
         </div>
       ),
     },
@@ -347,21 +409,25 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Student Management
+            {role === "teacher" ? "My Students" : "Student Management"}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             {role === "super_admin"
               ? "Enroll, monitor and manage student records across all centers"
-              : "Manage student records for your center"}
+              : role === "teacher"
+                ? "View and monitor your assigned students"
+                : "Manage student records for your center"}
           </p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 font-semibold"
-        >
-          <Plus size={18} className="mr-2" />
-          Enroll New Student
-        </button>
+        {role !== "teacher" && role !== "student" && role !== "parents" && (
+          <button
+            onClick={handleAdd}
+            className="flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 font-semibold"
+          >
+            <Plus size={18} className="mr-2" />
+            Enroll New Student
+          </button>
+        )}
       </div>
 
       {/* Main Table */}
@@ -530,6 +596,20 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
 
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700">
+                  Status
+                </label>
+                <select
+                  {...register("status")}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700">
                   Dates
                 </label>
                 <div className="space-y-2">
@@ -652,25 +732,21 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
             {/* Tabs */}
             <div className="border-b border-gray-100">
               <div className="flex space-x-8 -mb-px">
-                {[
-                  "profile",
-                  "assignments",
-                  "attendance",
-                  "fees",
-                  "progress",
-                ].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`pb-4 text-sm font-semibold transition-all border-b-2 capitalize ${
-                      activeTab === tab
-                        ? "border-indigo-600 text-indigo-600"
-                        : "border-transparent text-gray-400 hover:text-gray-600"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                {["profile", "assignments", "attendance", "fees", "progress"]
+                  .filter((tab) => role !== "teacher" || tab !== "fees")
+                  .map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`pb-4 text-sm font-semibold transition-all border-b-2 capitalize ${
+                        activeTab === tab
+                          ? "border-indigo-600 text-indigo-600"
+                          : "border-transparent text-gray-400 hover:text-gray-600"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
               </div>
             </div>
 
@@ -683,58 +759,259 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
               ) : (
                 <>
                   {activeTab === "profile" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <h4 className="font-bold text-gray-900">
-                          Contact Details
-                        </h4>
-                        <div className="space-y-3">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Mail size={16} className="mr-3 text-gray-400" />
-                            {selectedStudent.user?.email}
-                          </div>
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone size={16} className="mr-3 text-gray-400" />
-                            {selectedStudent.user?.phone || "N/A"}
-                          </div>
-                          <div className="flex items-start text-sm text-gray-600">
-                            <MapPin
-                              size={16}
-                              className="mr-3 text-gray-400 mt-0.5"
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Left Column: Personal & Academic */}
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+                            <GraduationCap
+                              size={18}
+                              className="mr-2 text-indigo-600"
                             />
-                            {selectedStudent.user?.address || "N/A"}
+                            Academic Details
+                          </h4>
+                          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                            <div className="flex justify-between items-center py-2 border-b border-gray-200/50">
+                              <span className="text-sm text-gray-500">
+                                Enrollment No
+                              </span>
+                              <span className="text-sm font-semibold">
+                                {selectedStudent.enrollment_no || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-gray-200/50">
+                              <span className="text-sm text-gray-500">
+                                Current Level
+                              </span>
+                              <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">
+                                {selectedStudent.current_level || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-gray-200/50">
+                              <span className="text-sm text-gray-500">
+                                Grade / Group
+                              </span>
+                              <span className="text-sm font-semibold">
+                                {selectedStudent.grade || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-sm text-gray-500">
+                                Enrollment Date
+                              </span>
+                              <span className="text-sm font-semibold">
+                                {selectedStudent.enrollment_date
+                                  ? new Date(
+                                      selectedStudent.enrollment_date,
+                                    ).toLocaleDateString()
+                                  : "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+                            <BookOpen
+                              size={18}
+                              className="mr-2 text-indigo-600"
+                            />
+                            Registered Subjects
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {Array.isArray(selectedStudent.subjects) &&
+                            selectedStudent.subjects.length > 0 ? (
+                              selectedStudent.subjects.map((sub, i) => (
+                                <Badge
+                                  key={i}
+                                  variant="blue"
+                                  className="px-3 py-1"
+                                >
+                                  {sub}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-sm text-gray-400 italic">
+                                No subjects registered
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-4">
-                        <h4 className="font-bold text-gray-900">
-                          Guardian & Teacher
-                        </h4>
-                        <div className="space-y-3">
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center">
-                            <User size={16} className="mr-3 text-gray-400" />
-                            <div>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase">
-                                Guardian
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedStudent.parent?.name || "Not assigned"}
-                              </p>
+
+                      {/* Right Column: Contact & Relationships */}
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+                            <User size={18} className="mr-2 text-indigo-600" />
+                            Personal Information
+                          </h4>
+                          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-4">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Calendar
+                                size={16}
+                                className="mr-3 text-gray-400"
+                              />
+                              <span className="w-24 text-gray-400">DOB:</span>
+                              {selectedStudent.date_of_birth
+                                ? new Date(
+                                    selectedStudent.date_of_birth,
+                                  ).toLocaleDateString()
+                                : "N/A"}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Mail size={16} className="mr-3 text-gray-400" />
+                              <span className="w-24 text-gray-400">Email:</span>
+                              {selectedStudent.user?.email || "N/A"}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Phone size={16} className="mr-3 text-gray-400" />
+                              <span className="w-24 text-gray-400">Phone:</span>
+                              {selectedStudent.user?.phone || "N/A"}
+                            </div>
+                            <div className="flex items-start text-sm text-gray-600">
+                              <MapPin
+                                size={16}
+                                className="mr-3 text-gray-400 mt-0.5"
+                              />
+                              <span className="w-24 text-gray-400">
+                                Address:
+                              </span>
+                              <span className="flex-1">
+                                {selectedStudent.user?.address || "N/A"}
+                              </span>
                             </div>
                           </div>
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center">
-                            <GraduationCap
-                              size={16}
-                              className="mr-3 text-gray-400"
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+                            <Building2
+                              size={18}
+                              className="mr-2 text-indigo-600"
                             />
-                            <div>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase">
-                                Class Teacher
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedStudent.teacher?.name ||
-                                  "Not assigned"}
-                              </p>
+                            Guardian & Teacher
+                          </h4>
+                          <div className="space-y-4">
+                            {/* Guardian Card */}
+                            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-3">
+                              <div className="flex items-center pb-2 border-b border-gray-100">
+                                <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center mr-3">
+                                  <User size={14} className="text-orange-600" />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">
+                                    Guardian
+                                  </p>
+                                  <p className="text-sm font-bold text-gray-800">
+                                    {selectedStudent.parent?.name ||
+                                      "Not assigned"}
+                                  </p>
+                                </div>
+                              </div>
+                              {selectedStudent.parent && (
+                                <div className="space-y-2 pt-1">
+                                  <div className="flex items-center text-xs text-gray-600">
+                                    <Mail
+                                      size={12}
+                                      className="mr-2 text-gray-400"
+                                    />
+                                    {selectedStudent.parent.email || "N/A"}
+                                  </div>
+                                  <div className="flex items-center text-xs text-gray-600">
+                                    <Phone
+                                      size={12}
+                                      className="mr-2 text-gray-400"
+                                    />
+                                    {selectedStudent.parent.phone || "N/A"}
+                                  </div>
+                                  <div className="flex items-start text-xs text-gray-600">
+                                    <MapPin
+                                      size={12}
+                                      className="mr-2 text-gray-400 mt-0.5"
+                                    />
+                                    <span className="flex-1">
+                                      {selectedStudent.parent.address || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Teacher Card */}
+                            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-3">
+                              <div className="flex items-center pb-2 border-b border-gray-100">
+                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                                  <GraduationCap
+                                    size={14}
+                                    className="text-blue-600"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">
+                                    Class Teacher
+                                  </p>
+                                  <p className="text-sm font-bold text-gray-800">
+                                    {selectedStudent.teacher?.name ||
+                                      "Not assigned"}
+                                  </p>
+                                </div>
+                              </div>
+                              {selectedStudent.teacher && (
+                                <div className="space-y-2 pt-1">
+                                  <div className="flex items-center text-xs text-gray-600">
+                                    <Mail
+                                      size={12}
+                                      className="mr-2 text-gray-400"
+                                    />
+                                    {selectedStudent.teacher.email || "N/A"}
+                                  </div>
+                                  <div className="flex items-center text-xs text-gray-600">
+                                    <Phone
+                                      size={12}
+                                      className="mr-2 text-gray-400"
+                                    />
+                                    {selectedStudent.teacher.phone || "N/A"}
+                                  </div>
+                                  <div className="flex items-start text-xs text-gray-600">
+                                    <MapPin
+                                      size={12}
+                                      className="mr-2 text-gray-400 mt-0.5"
+                                    />
+                                    <span className="flex-1">
+                                      {selectedStudent.teacher.address || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+                            <Building2
+                              size={18}
+                              className="mr-2 text-indigo-600"
+                            />
+                            Center Information
+                          </h4>
+                          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                            <div className="flex items-center text-sm text-gray-700 font-bold mb-1">
+                              {selectedStudent.center?.name || "N/A"}
+                            </div>
+                            <div className="flex items-center text-xs text-gray-600">
+                              <Phone size={12} className="mr-2 text-gray-400" />
+                              {selectedStudent.center?.phone || "N/A"}
+                            </div>
+                            <div className="flex items-start text-xs text-gray-600">
+                              <MapPin
+                                size={12}
+                                className="mr-2 text-gray-400 mt-0.5"
+                              />
+                              <span className="flex-1">
+                                {selectedStudent.center?.address || "N/A"}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -754,18 +1031,31 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                               <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
                                 <ClipboardList size={20} />
                               </div>
-                              <div>
-                                <h5 className="font-bold text-gray-900">
+                              <div className="flex-1">
+                                <h5 className="font-bold text-gray-900 leading-tight">
                                   {item.worksheet?.title}
                                 </h5>
-                                <p className="text-xs text-gray-500">
-                                  Assigned:{" "}
-                                  {new Date(
-                                    item.assigned_date,
-                                  ).toLocaleDateString()}{" "}
-                                  | Due:{" "}
-                                  {new Date(item.due_date).toLocaleDateString()}
-                                </p>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                  <p className="text-[10px] text-gray-500 flex items-center">
+                                    <Calendar size={12} className="mr-1" />
+                                    Assigned:{" "}
+                                    {new Date(
+                                      item.assigned_date,
+                                    ).toLocaleDateString()}
+                                  </p>
+                                  <p className="text-[10px] text-gray-500 flex items-center">
+                                    <Clock size={12} className="mr-1" />
+                                    Due:{" "}
+                                    {new Date(
+                                      item.due_date,
+                                    ).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {item.notes && (
+                                  <p className="mt-2 text-xs text-gray-600 italic border-l-2 border-gray-100 pl-3 py-0.5">
+                                    "{item.notes}"
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <Badge
@@ -955,25 +1245,76 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                           progress.map((p) => (
                             <div
                               key={p.id}
-                              className="p-4 bg-white border border-gray-100 rounded-2xl"
+                              className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-indigo-200 transition-colors"
                             >
-                              <div className="flex justify-between mb-2">
-                                <span className="font-bold text-sm">
-                                  {p.subject?.name}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(p.created_at).toLocaleDateString()}
-                                </span>
+                              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-50">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center mr-3 text-indigo-600">
+                                    <BookOpen size={20} />
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                      {p.subject?.name}
+                                    </p>
+                                    <h5 className="font-bold text-gray-900">
+                                      {p.level?.name || "Level " + p.student_id}
+                                    </h5>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                                    {p.is_level_complete
+                                      ? "Completed"
+                                      : "In Progress"}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                                <div>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Worksheets
+                                  </p>
+                                  <p className="text-sm font-bold text-gray-800">
+                                    {p.worksheets_completed || 0}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Avg. Score
+                                  </p>
+                                  <p className="text-sm font-bold text-gray-800">
+                                    {p.average_score || 0}%
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Avg. Time
+                                  </p>
+                                  <p className="text-sm font-bold text-gray-800">
+                                    {p.average_time || 0}m
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Started
+                                  </p>
+                                  <p className="text-sm font-bold text-gray-800">
+                                    {p.level_started_at
+                                      ? new Date(
+                                          p.level_started_at,
+                                        ).toLocaleDateString()
+                                      : "N/A"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="w-full bg-gray-100 rounded-full h-2">
                                 <div
-                                  className="bg-indigo-600 h-2 rounded-full"
-                                  style={{ width: `${p.score || 0}%` }}
+                                  className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
+                                  style={{ width: `${p.average_score || 0}%` }}
                                 ></div>
                               </div>
-                              <p className="text-xs text-gray-600">
-                                {p.comments || "No comments provided"}
-                              </p>
                             </div>
                           ))
                         ) : (

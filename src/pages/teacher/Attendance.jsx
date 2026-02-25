@@ -8,7 +8,7 @@ const TeacherAttendance = () => {
   return (
     <AttendanceModule
       role="teacher"
-      initialFilters={{ teacher_id: user?.id }}
+      initialFilters={{ teacher_id: user?.teacher_id || user?.id }}
     />
   );
 };
