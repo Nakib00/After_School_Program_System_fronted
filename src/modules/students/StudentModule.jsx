@@ -33,8 +33,8 @@ import * as z from "zod";
 import { toast } from "react-hot-toast";
 
 const studentSchema = z.object({
-  name: z.string().min(1, "Full Name is required"),
-  email: z.string().email("Invalid email address"),
+  name: z.string().min(1, "Full Name is required").max(255),
+  email: z.string().email("Invalid email address").max(255),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")
@@ -43,12 +43,12 @@ const studentSchema = z.object({
   center_id: z.coerce.number().min(1, "Center is required"),
   parent_id: z.coerce.number().optional().nullable(),
   teacher_id: z.coerce.number().optional().nullable(),
-  enrollment_no: z.string().optional(),
-  date_of_birth: z.string().optional(),
-  grade: z.string().optional(),
-  enrollment_date: z.string().optional(),
-  subjects: z.array(z.string()).optional(),
-  current_level: z.string().optional(),
+  enrollment_no: z.string().max(50).optional().nullable(),
+  date_of_birth: z.string().optional().nullable(),
+  grade: z.string().max(20).optional().nullable(),
+  enrollment_date: z.string().optional().nullable(),
+  subjects: z.array(z.string()).optional().nullable(),
+  current_level: z.string().max(20).optional().nullable(),
   status: z
     .enum(["active", "inactive", "completed"])
     .optional()
@@ -539,8 +539,8 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                 >
                   <option value="">Select Parent</option>
                   {parents.map((parent) => (
-                    <option key={parent.id} value={parent.id}>
-                      {parent.name}
+                    <option key={parent.id} value={parent.user_id || parent.id}>
+                      {parent.name || parent.user?.name}
                     </option>
                   ))}
                 </select>
@@ -569,8 +569,8 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                 >
                   <option value="">Select Teacher</option>
                   {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.user?.name}
+                    <option key={t.id} value={t.user_id || t.id}>
+                      {t.user?.name || t.name}
                     </option>
                   ))}
                 </select>
