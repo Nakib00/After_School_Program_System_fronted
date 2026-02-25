@@ -39,8 +39,10 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
         className={`fixed top-0 right-0 h-full w-full ${sizeClasses[size] || sizeClasses.md} bg-white shadow-[-20px_0_50px_-12px_rgba(0,0,0,0.15)] flex flex-col border-l border-gray-100 animate-slide-in-right z-10`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-gray-50 flex-shrink-0 bg-white">
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+        <div className="flex items-center justify-between px-5 md:px-8 py-5 border-b border-gray-50 flex-shrink-0 bg-white">
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 truncate mr-2">
+            {title}
+          </h3>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all"
@@ -50,7 +52,7 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-8">
           <div className="animate-fade-in fill-mode-forwards opacity-0">
             {children}
           </div>

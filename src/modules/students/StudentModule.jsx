@@ -748,15 +748,15 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-gray-100">
-              <div className="flex space-x-8 -mb-px">
+            <div className="border-b border-gray-100 -mx-5 md:mx-0 px-5 md:px-0 overflow-x-auto custom-scrollbar">
+              <div className="flex space-x-6 md:space-x-8 -mb-px min-w-max">
                 {["profile", "assignments", "attendance", "fees", "progress"]
                   .filter((tab) => role !== "teacher" || tab !== "fees")
                   .map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`pb-4 text-sm font-semibold transition-all border-b-2 capitalize ${
+                      className={`pb-4 text-sm font-semibold transition-all border-b-2 capitalize whitespace-nowrap ${
                         activeTab === tab
                           ? "border-indigo-600 text-indigo-600"
                           : "border-transparent text-gray-400 hover:text-gray-600"
@@ -1113,7 +1113,7 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                           Total: {attendance.length}
                         </span>
                       </div>
-                      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                      <div className="bg-white border border-gray-100 rounded-2xl overflow-x-auto custom-scrollbar">
                         {attendance.length > 0 ? (
                           <table className="w-full text-sm">
                             <thead className="bg-gray-50 text-gray-500">
