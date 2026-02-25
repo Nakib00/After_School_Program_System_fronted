@@ -47,13 +47,16 @@ const SubjectModule = ({ role = "super_admin" }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = showAll
-        ? await subjectService.getAll()
-        : await subjectService.getAllActive();
+      const res =
+        role === "super_admin" && showAll
+          ? await subjectService.getAll()
+          : await subjectService.getAllActive();
       setSubjects(res.data.data || []);
     } catch (error) {
       console.error("Failed to fetch subjects:", error);
-      toast.error("Failed to load subjects");
+      if (error.response?.status !== 401) {
+        toast.error("Failed to load subjects");
+      }
     } finally {
       setLoading(false);
     }
@@ -204,10 +207,12 @@ const SubjectModule = ({ role = "super_admin" }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Subject Management
+            {role === "super_admin" ? "Subject Management" : "Active Subjects"}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Manage academic subjects and curriculum
+            {role === "super_admin"
+              ? "Manage academic subjects and curriculum"
+              : "View available subjects and curriculum details"}
           </p>
         </div>
         <div className="flex items-center space-x-3">

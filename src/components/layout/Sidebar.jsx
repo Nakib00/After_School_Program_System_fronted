@@ -65,6 +65,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     teacher: [
       { name: "Dashboard", icon: LayoutDashboard, path: "/teacher/dashboard" },
       { name: "My Students", icon: Users, path: "/teacher/students" },
+      { name: "Subjects", icon: BookOpen, path: "/teacher/subjects" },
       { name: "Assignments", icon: BookOpen, path: "/teacher/assignments" },
       { name: "Grade Submissions", icon: CheckSquare, path: "/teacher/grade" },
       { name: "Attendance", icon: Calendar, path: "/teacher/attendance" },

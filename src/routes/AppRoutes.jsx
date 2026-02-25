@@ -48,6 +48,7 @@ const GradeSubmissions = lazy(
   () => import("../pages/teacher/GradeSubmissions"),
 );
 const TeacherAttendance = lazy(() => import("../pages/teacher/Attendance"));
+const TeacherSubjects = lazy(() => import("../pages/teacher/Subjects"));
 
 // Parent Pages
 const ParentDashboard = lazy(() => import("../pages/parent/Dashboard"));
@@ -154,6 +155,7 @@ const AppRoutes = () => {
                 path="/teacher/attendance"
                 element={<TeacherAttendance />}
               />
+              <Route path="/teacher/subjects" element={<TeacherSubjects />} />
             </Route>
 
             {/* Parent Routes */}
