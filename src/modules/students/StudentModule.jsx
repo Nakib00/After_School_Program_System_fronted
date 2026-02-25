@@ -49,6 +49,7 @@ const studentSchema = z.object({
   enrollment_date: z.string().optional().nullable(),
   subjects: z.array(z.string()).optional().nullable(),
   current_level: z.string().max(20).optional().nullable(),
+  address: z.string().max(255).optional().nullable(),
   status: z
     .enum(["active", "inactive", "completed"])
     .optional()
@@ -166,6 +167,7 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
       enrollment_date: "",
       subjects: [],
       current_level: "",
+      address: "",
     });
     setIsModalOpen(true);
   };
@@ -191,6 +193,7 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
         : "",
       subjects: student.subjects || [],
       current_level: student.current_level || "",
+      address: student.user?.address || "",
       status: student.status || "active",
     });
     setIsModalOpen(true);
@@ -636,6 +639,21 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700">
+              Residential Address
+            </label>
+            <textarea
+              {...register("address")}
+              rows="2"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="Full residential address"
+            ></textarea>
+            {errors.address && (
+              <p className="text-xs text-red-500">{errors.address.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">

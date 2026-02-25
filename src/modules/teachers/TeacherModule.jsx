@@ -660,13 +660,16 @@ const TeacherAssignmentModal = ({ isOpen, onClose, teacher, onSuccess }) => {
     if (!teacher) return;
     try {
       setLoading(true);
-      const { data } = await adminService.getStudents();
+      // Filter by center to make the list relevant
+      const params = { center_id: teacher.center_id };
+      const { data } = await adminService.getStudents(params);
       setStudents(data.data || []);
 
       const assignedRes = await teacherService.getStudents(teacher.id);
       setSelectedIds(assignedRes.data.data.map((s) => s.id));
     } catch (error) {
       console.error("Failed to fetch students:", error);
+      toast.error("Failed to load student list");
     } finally {
       setLoading(false);
     }
