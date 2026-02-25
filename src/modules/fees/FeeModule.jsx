@@ -25,10 +25,15 @@ import * as z from "zod";
 import { toast } from "react-hot-toast";
 
 const feeSchema = z.object({
-  student_id: z.coerce.number().min(1, "Student is required"),
-  amount: z.coerce.number().min(1, "Amount must be greater than 0"),
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Format must be YYYY-MM"),
+  center_id: z.coerce.number().optional().nullable(),
   due_date: z.string().min(1, "Due date is required"),
-  description: z.string().optional(),
+});
+
+const paymentSchema = z.object({
+  payment_method: z.string().min(1, "Payment method is required"),
+  transaction_id: z.string().optional(),
+  paid_date: z.string().optional(),
 });
 
 const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
@@ -48,22 +53,49 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(feeSchema),
+    defaultValues: {
+      month: new Date().toISOString().slice(0, 7),
+      due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+        .toISOString()
+        .split("T")[0],
+    },
   });
+
+  const {
+    register: registerPay,
+    handleSubmit: handleSubmitPay,
+    reset: resetPay,
+    formState: { errors: payErrors },
+  } = useForm({
+    resolver: zodResolver(paymentSchema),
+    defaultValues: {
+      payment_method: "Cash",
+      paid_date: new Date().toISOString().split("T")[0],
+    },
+  });
+
+  const [report, setReport] = useState([]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const params = { ...initialFilters };
-      const [feesRes, centersRes, studentsRes] = await Promise.all([
+      const [feesRes, centersRes, studentsRes, reportRes] = await Promise.all([
         feeService.getAll(params),
         role === "super_admin"
           ? centerService.getAll()
           : Promise.resolve({ data: { data: [] } }),
-        studentService.getAll(params),
+        role !== "parents"
+          ? studentService.getAll(params)
+          : Promise.resolve({ data: { data: [] } }),
+        role !== "parents"
+          ? feeService.getReport(params)
+          : Promise.resolve({ data: { data: [] } }),
       ]);
       setFees(feesRes.data.data || []);
       if (role === "super_admin") setCenters(centersRes.data.data || []);
-      setStudents(studentsRes.data.data || []);
+      if (role !== "parents") setStudents(studentsRes.data.data || []);
+      if (role !== "parents") setReport(reportRes.data.data || []);
     } catch (error) {
       console.error("Failed to fetch fee data:", error);
       toast.error("Failed to load fees data");
@@ -170,11 +202,15 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex space-x-2">
-          {row.original.status !== "paid" && (
+          {role !== "parents" && row.original.status !== "paid" && (
             <button
               onClick={() => {
                 setSelectedFee(row.original);
                 setIsPayModalOpen(true);
+                resetPay({
+                  payment_method: "Cash",
+                  paid_date: new Date().toISOString().split("T")[0],
+                });
               }}
               className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition-colors"
             >
@@ -189,22 +225,72 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
     },
   ];
 
+  const summaryData = [
+    { label: "Total Paid", status: "paid", color: "green", icon: CheckCircle },
+    { label: "Unpaid", status: "unpaid", color: "orange", icon: Clock },
+    { label: "Overdue", status: "overdue", color: "red", icon: AlertCircle },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Fee Management</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {role === "parents" ? "Fee History" : "Fee Management"}
+          </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Track and manage student invoices and payments
+            {role === "parents"
+              ? "View and track your tuition fee records"
+              : "Track and manage student invoices and payments"}
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg font-semibold"
-        >
-          <Plus size={18} className="mr-2" /> Generate Invoice
-        </button>
+        {role !== "parents" && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg font-semibold"
+          >
+            <Plus size={18} className="mr-2" /> Generate Monthly Fees
+          </button>
+        )}
       </div>
+
+      {role !== "parents" && report.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {summaryData.map((item) => {
+            const stats = report.find((r) => r.status === item.status) || {
+              count: 0,
+              total_amount: 0,
+            };
+            return (
+              <div
+                key={item.status}
+                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className={`p-3 bg-${item.color}-50 text-${item.color}-600 rounded-xl`}
+                  >
+                    <item.icon size={24} />
+                  </div>
+                  <span
+                    className={`text-xs font-bold uppercase tracking-wider text-${item.color}-600`}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    ${Number(stats.total_amount).toLocaleString()}
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    {stats.count} Records
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
@@ -216,82 +302,66 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
         )}
       </div>
 
-      {/* Generate Invoice Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Generate New Invoice"
+        title="Generate Monthly Fees"
         size="md"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pt-2">
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-gray-700">
-              Student
+              Fee Month (YYYY-MM)
             </label>
-            <select
-              {...register("student_id")}
+            <input
+              type="month"
+              {...register("month")}
               className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Select Student</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.center?.name})
-                </option>
-              ))}
-            </select>
-            {errors.student_id && (
-              <p className="text-xs text-red-500">
-                {errors.student_id.message}
-              </p>
+            />
+            {errors.month && (
+              <p className="text-xs text-red-500">{errors.month.message}</p>
             )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-gray-700">
-                Amount ($)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">
-                  <DollarSign size={18} />
-                </span>
-                <input
-                  type="number"
-                  {...register("amount")}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
-                  placeholder="0.00"
-                />
-              </div>
-              {errors.amount && (
-                <p className="text-xs text-red-500">{errors.amount.message}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-gray-700">
-                Due Date
-              </label>
-              <input
-                type="date"
-                {...register("due_date")}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
-              />
-              {errors.due_date && (
-                <p className="text-xs text-red-500">
-                  {errors.due_date.message}
-                </p>
-              )}
-            </div>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-gray-700">
-              Description / Memo
+              Due Date
             </label>
-            <textarea
-              {...register("description")}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none min-h-[80px]"
-              placeholder="Monthly tuition fee for March..."
+            <input
+              type="date"
+              {...register("due_date")}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
             />
+            {errors.due_date && (
+              <p className="text-xs text-red-500">{errors.due_date.message}</p>
+            )}
+          </div>
+
+          {role === "super_admin" && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-gray-700">
+                Center (Optional)
+              </label>
+              <select
+                {...register("center_id")}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+              >
+                <option value="">User's Center</option>
+                {centers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mb-2">
+            <p className="text-xs text-indigo-700 leading-relaxed font-medium">
+              Generating fees will create an unpaid invoice for every active
+              student in the selected center based on their "Monthly Fee"
+              setting.
+            </p>
           </div>
 
           <div className="flex justify-end pt-4 font-bold">
@@ -307,20 +377,19 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
               disabled={submitting}
               className="px-8 py-2.5 bg-indigo-600 text-white rounded-xl shadow-lg"
             >
-              {submitting ? <Spinner size="sm" /> : "Generate Invoice"}
+              {submitting ? <Spinner size="sm" /> : "Generate Now"}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Record Payment Modal */}
       <Modal
         isOpen={isPayModalOpen}
         onClose={() => setIsPayModalOpen(false)}
         title="Record Payment"
         size="sm"
       >
-        <div className="space-y-6">
+        <form onSubmit={handleSubmitPay(handlePay)} className="space-y-6">
           <div className="p-4 bg-green-50 rounded-xl border border-green-100">
             <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-1">
               Total Amount Due
@@ -335,40 +404,64 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
               <label className="text-sm font-semibold text-gray-700">
                 Payment Method
               </label>
-              <select className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none">
-                <option>Cash</option>
-                <option>Bank Transfer</option>
-                <option>Credit Card</option>
-                <option>Mobile Banking</option>
+              <select
+                {...registerPay("payment_method")}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+              >
+                <option value="Cash">Cash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Mobile Banking">Mobile Banking</option>
               </select>
+              {payErrors.payment_method && (
+                <p className="text-xs text-red-500">
+                  {payErrors.payment_method.message}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-gray-700">
                 Transaction ID (Optional)
               </label>
               <input
+                {...registerPay("transaction_id")}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
                 placeholder="TXN-123456"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-gray-700">
+                Payment Date
+              </label>
+              <input
+                type="date"
+                {...registerPay("paid_date")}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
               />
             </div>
           </div>
 
           <div className="flex gap-3 font-bold">
             <button
+              type="button"
               onClick={() => setIsPayModalOpen(false)}
-              className="flex-1 py-2.5 bg-gray-100 rounded-xl"
+              className="flex-1 py-2.5 bg-gray-100 rounded-xl text-gray-600"
             >
               Cancel
             </button>
             <button
-              onClick={() => handlePay({ payment_method: "Cash" })}
+              type="submit"
               disabled={submitting}
-              className="flex-1 py-2.5 bg-green-600 text-white rounded-xl shadow-lg"
+              className="flex-1 py-2.5 bg-green-600 text-white rounded-xl shadow-lg flex items-center justify-center"
             >
-              {submitting ? <Spinner size="sm" /> : "Confirm Payment"}
+              {submitting ? (
+                <Spinner size="sm" className="mr-2" />
+              ) : (
+                "Confirm Payment"
+              )}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
     </div>
   );

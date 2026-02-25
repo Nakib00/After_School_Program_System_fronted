@@ -77,6 +77,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       { name: "Dashboard", icon: LayoutDashboard, path: "/parent/dashboard" },
       { name: "Child Progress", icon: TrendingUp, path: "/parent/progress" },
       { name: "Assignments", icon: ClipboardList, path: "/parent/assignments" },
+      { name: "Attendance", icon: Calendar, path: "/parent/attendance" },
       { name: "Fees", icon: DollarSign, path: "/parent/fees" },
     ],
     student: [
@@ -134,16 +135,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             );
           })}
         </nav>
-
-        <div className="p-4 border-t border-gray-800">
-          <button
-            onClick={logout}
-            className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Logout
-          </button>
-        </div>
       </div>
     </>
   );

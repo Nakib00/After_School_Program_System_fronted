@@ -28,9 +28,12 @@ import { toast } from "react-hot-toast";
 
 const AttendanceModule = ({ role = "teacher" }) => {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState("mark"); // "mark" or "history"
+  const [activeTab, setActiveTab] = useState(
+    role === "parents" ? "history" : "mark",
+  ); // "mark" or "history"
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [summary, setSummary] = useState([]);
 
   // Mark Tab State
   const [students, setStudents] = useState([]);
@@ -50,22 +53,39 @@ const AttendanceModule = ({ role = "teacher" }) => {
 
     try {
       setLoading(true);
+      const params = { month: filterMonth };
+
+      if (role === "center_admin" || role === "super_admin") {
+        params.center_id = user.center_id;
+      }
+
       if (activeTab === "mark") {
-        const studentsRes = await teacherService.getStudents(user.id);
-        const studentList = studentsRes.data.data || [];
-        setStudents(studentList);
+        let studentsData = [];
+        if (role === "teacher") {
+          const res = await teacherService.getStudents(user.id);
+          studentsData = res.data.data || [];
+        } else if (role === "center_admin" || role === "super_admin") {
+          const res = await studentService.getAll({
+            center_id: user.center_id,
+          });
+          studentsData = res.data.data || [];
+        }
+        setStudents(studentsData);
 
         // Initialize attendance data with 'present' by default
         const initial = {};
-        studentList.forEach((s) => {
+        studentsData.forEach((s) => {
           initial[s.id] = { status: "present", notes: "" };
         });
         setAttendanceData(initial);
       } else {
-        const historyRes = await attendanceService.getAll({
-          month: filterMonth,
-        });
+        const historyRes = await attendanceService.getAll(params);
         setHistory(historyRes.data.data || []);
+      }
+
+      if (role !== "parents") {
+        const summaryRes = await attendanceService.getSummary(params);
+        setSummary(summaryRes.data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch attendance data:", error);
@@ -99,10 +119,8 @@ const AttendanceModule = ({ role = "teacher" }) => {
     try {
       setSubmitting(true);
       // Assuming teacher's first student's center_id is the reference for the center
-      const centerId = students[0]?.center_id;
-
       const payload = {
-        center_id: centerId,
+        center_id: user.center_id || students[0]?.center_id,
         date: selectedDate,
         attendance: Object.entries(attendanceData).map(([studentId, data]) => ({
           student_id: parseInt(studentId),
@@ -197,21 +215,23 @@ const AttendanceModule = ({ role = "teacher" }) => {
         </div>
 
         <div className="flex p-1 bg-gray-100 rounded-xl overflow-hidden w-fit">
-          <button
-            onClick={() => setActiveTab("mark")}
-            className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              activeTab === "mark"
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <CheckSquare size={16} className="mr-2" />
-            Mark Today
-          </button>
+          {role !== "parents" && (
+            <button
+              onClick={() => setActiveTab("mark")}
+              className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                activeTab === "mark"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <CheckSquare size={16} className="mr-2" />
+              Mark Today
+            </button>
+          )}
           <button
             onClick={() => setActiveTab("history")}
             className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              activeTab === "history"
+              activeTab === "history" || role === "parents"
                 ? "bg-white text-indigo-600 shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
@@ -221,6 +241,50 @@ const AttendanceModule = ({ role = "teacher" }) => {
           </button>
         </div>
       </div>
+
+      {role !== "parents" && summary.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              id: "present",
+              label: "Present",
+              color: "green",
+              icon: UserCheck,
+            },
+            { id: "late", label: "Late", color: "yellow", icon: Clock },
+            { id: "absent", label: "Absent", color: "red", icon: UserX },
+          ].map((item) => {
+            const stats = summary.find((s) => s.status === item.id) || {
+              count: 0,
+            };
+            return (
+              <div
+                key={item.id}
+                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className={`p-3 bg-${item.color}-50 text-${item.color}-600 rounded-xl`}
+                  >
+                    <item.icon size={24} />
+                  </div>
+                  <span
+                    className={`text-xs font-bold uppercase tracking-wider text-${item.color}-600`}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {stats.count}
+                  </h3>
+                  <span className="text-sm text-gray-500">Recordings</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {activeTab === "mark" ? (
         <div className="space-y-6">

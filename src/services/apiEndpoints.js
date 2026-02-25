@@ -105,8 +105,9 @@ export const FEES = {
     GENERATE: `${API_BASE}/fees/generate`,
     DETAIL: (id) => `${API_BASE}/fees/${id}`,
     PAY: (id) => `${API_BASE}/fees/${id}/pay`,
-    OVERDUE: (id) => `${API_BASE}/fees/${id}/overdue`,
+    MARK_OVERDUE_ALL: `${API_BASE}/fees/mark-overdue`,
     REPORT: `${API_BASE}/fees/report`,
+    UNPAID_OVERDUE: `${API_BASE}/fees/unpaid-overdue`,
     PENDING: `${API_BASE}/fees/pending`,
 };
 

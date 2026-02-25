@@ -61,8 +61,16 @@ const Navbar = ({ toggleSidebar }) => {
                 {user?.role?.replace(/_/g, " ")}
               </span>
             </div>
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full group-hover:bg-blue-200 transition-colors">
-              <User className="w-6 h-6 text-blue-600" />
+            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full group-hover:bg-blue-200 transition-colors overflow-hidden border border-gray-100">
+              {user?.profile_photo_path ? (
+                <img
+                  src={user.profile_photo_path}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-6 h-6 text-blue-600" />
+              )}
             </div>
             <ChevronDown
               className={`w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-all ${dropdownOpen ? "rotate-180" : ""}`}

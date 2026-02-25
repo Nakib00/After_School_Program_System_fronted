@@ -5,12 +5,7 @@ import { useAuthStore } from "../../store/authStore";
 const CenterAdminAttendance = () => {
   const { user } = useAuthStore();
 
-  return (
-    <AttendanceModule
-      role="center_admin"
-      initialFilters={{ center_id: user?.center_id }}
-    />
-  );
+  return <AttendanceModule role="center_admin" />;
 };
 
 export default CenterAdminAttendance;
