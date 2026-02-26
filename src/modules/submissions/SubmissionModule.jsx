@@ -140,12 +140,26 @@ const SubmissionModule = ({ role = "teacher" }) => {
     {
       header: "Action",
       cell: ({ row }) => (
-        <button
-          onClick={() => handleGrade(row.original)}
-          className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm"
-        >
-          Grade Now
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handleGrade(row.original)}
+            className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm flex items-center"
+          >
+            <Award size={16} className="mr-1.5" />
+            Grade
+          </button>
+          {row.original.submitted_file && (
+            <a
+              href={row.original.submitted_file}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+              title="Download/Review File"
+            >
+              <Download size={18} />
+            </a>
+          )}
+        </div>
       ),
     },
   ];
@@ -244,13 +258,13 @@ const SubmissionModule = ({ role = "teacher" }) => {
                   Submitted Asset
                 </h5>
                 <div className="relative group rounded-2xl overflow-hidden border-2 border-gray-100 bg-gray-50 aspect-[4/3] flex items-center justify-center">
-                  {selectedSubmission.file_url && (
+                  {selectedSubmission.submitted_file && (
                     <>
                       {selectedSubmission.submitted_file.match(
                         /\.(jpg|jpeg|png|gif)$/i,
                       ) ? (
                         <img
-                          src={selectedSubmission.file_url}
+                          src={selectedSubmission.submitted_file}
                           alt="Submission"
                           className="w-full h-full object-contain"
                         />
@@ -261,18 +275,27 @@ const SubmissionModule = ({ role = "teacher" }) => {
                             className="mx-auto text-gray-300 mb-4"
                           />
                           <p className="text-sm text-gray-500 font-medium">
-                            PDF Submission
+                            File Submission
                           </p>
+                          <a
+                            href={selectedSubmission.submitted_file}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 inline-flex items-center text-indigo-600 font-bold hover:underline"
+                          >
+                            <Download size={16} className="mr-1.5" />
+                            Download to Review
+                          </a>
                         </div>
                       )}
                       <a
-                        href={selectedSubmission.file_url}
+                        href={selectedSubmission.submitted_file}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold gap-2"
                       >
                         <ExternalLink size={20} />
-                        View Full Size
+                        View Full Size / Download
                       </a>
                     </>
                   )}
