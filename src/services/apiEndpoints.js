@@ -38,6 +38,8 @@ export const STUDENTS = {
     MY_ASSIGNMENTS: `${API_BASE}/student/my-assignments`,
     ATTENDANCE: (id) => `${API_BASE}/student/${id}/attendance`,
     FEES: (id) => `${API_BASE}/student/${id}/fees`,
+    DASHBOARD: `${API_BASE}/student/dashboard`,
+    REPORTS: (id) => `${API_BASE}/student/${id}/reports`,
 };
 
 export const TEACHERS = {
@@ -93,6 +95,7 @@ export const SUBMISSIONS = {
     BY_ASSIGNMENT: (assignmentId) => `${API_BASE}/submission/assignment/${assignmentId}`,
     PENDING: `${API_BASE}/submission/pending`,
     GRADE: (id) => `${API_BASE}/submission/${id}/grade`,
+    DOWNLOAD: (submissionId) => `${API_BASE}/submission/${submissionId}/download`,
 };
 
 export const ATTENDANCE = {

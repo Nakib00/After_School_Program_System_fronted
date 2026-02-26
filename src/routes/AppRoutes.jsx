@@ -64,6 +64,7 @@ const StudentDashboard = lazy(() => import("../pages/student/Dashboard"));
 const MyAssignments = lazy(() => import("../pages/student/MyAssignments"));
 const SubmitWork = lazy(() => import("../pages/student/SubmitWork"));
 const MyProgress = lazy(() => import("../pages/student/MyProgress"));
+const MyReports = lazy(() => import("../pages/student/MyReports"));
 
 // Shared Pages
 const Profile = lazy(() => import("../pages/Profile"));
@@ -184,6 +185,7 @@ const AppRoutes = () => {
               <Route path="/student/assignments" element={<MyAssignments />} />
               <Route path="/student/submit" element={<SubmitWork />} />
               <Route path="/student/progress" element={<MyProgress />} />
+              <Route path="/student/reports" element={<MyReports />} />
             </Route>
           </Route>
         </Route>

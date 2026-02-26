@@ -17,4 +17,6 @@ export const studentService = {
     getAttendance: (id) => api.get(STUDENTS.ATTENDANCE(id)),
     getFees: (id) => api.get(STUDENTS.FEES(id)),
     getProgress: (id) => api.get(STUDENTS.PROGRESS(id)),
+    getDashboard: () => api.get(STUDENTS.DASHBOARD),
+    getReports: (id) => api.get(STUDENTS.REPORTS(id)),
 };

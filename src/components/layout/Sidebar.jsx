@@ -89,6 +89,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       },
       { name: "Submit Work", icon: FileUp, path: "/student/submit" },
       { name: "My Progress", icon: Star, path: "/student/progress" },
+      { name: "My Reports", icon: BarChart3, path: "/student/reports" },
     ],
   };
 

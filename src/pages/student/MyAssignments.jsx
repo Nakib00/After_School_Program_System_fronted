@@ -105,6 +105,63 @@ const MyAssignments = () => {
     }
   };
 
+  const handleDownloadSubmission = async (
+    submissionId,
+    title,
+    viewOnly = false,
+  ) => {
+    try {
+      setDownloading(
+        viewOnly ? `view-${submissionId}` : `submission-${submissionId}`,
+      );
+      const response = await submissionService.download(submissionId);
+
+      const contentType = response.headers["content-type"];
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+
+      if (viewOnly) {
+        window.open(url, "_blank");
+        toast.success("Opening submission...");
+      } else {
+        // Try to get filename from content-disposition
+        const contentDisposition = response.headers["content-disposition"];
+        let filename = `${title.replace(/\s+/g, "_")}_Submission`;
+
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename=(.+)/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1].replace(/["']/g, "");
+          }
+        } else {
+          // Fallback extensions based on content-type
+          if (contentType === "application/pdf") filename += ".pdf";
+          else if (contentType === "image/png") filename += ".png";
+          else if (contentType === "image/jpeg") filename += ".jpg";
+          else if (
+            contentType ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          )
+            filename += ".docx";
+          else if (contentType === "application/msword") filename += ".doc";
+        }
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        toast.success("Submission download started");
+      }
+    } catch (error) {
+      console.error("Submission action failed:", error);
+      toast.error(`Failed to ${viewOnly ? "view" : "download"} submission`);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "assigned":
@@ -354,16 +411,45 @@ const MyAssignments = () => {
               </div>
             )}
 
-            <div className="pt-4 flex space-x-4">
-              <a
-                href={selectedSubmission.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 flex items-center justify-center py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all text-sm shadow-lg shadow-gray-200"
+            <div className="pt-4 flex flex-wrap gap-4">
+              <button
+                onClick={() =>
+                  handleDownloadSubmission(
+                    selectedSubmission.id,
+                    selectedSubmission.assignment?.worksheet?.title ||
+                      "Assignment",
+                    true,
+                  )
+                }
+                disabled={downloading === `view-${selectedSubmission.id}`}
+                className="flex-1 min-w-[140px] flex items-center justify-center py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all text-sm shadow-lg shadow-gray-200 disabled:opacity-50"
               >
-                <FileText size={18} className="mr-2" />
+                {downloading === `view-${selectedSubmission.id}` ? (
+                  <Spinner size="sm" className="mr-2" />
+                ) : (
+                  <FileText size={18} className="mr-2" />
+                )}
                 View Submitted File
-              </a>
+              </button>
+              <button
+                onClick={() =>
+                  handleDownloadSubmission(
+                    selectedSubmission.id,
+                    selectedSubmission.assignment?.worksheet?.title ||
+                      "Assignment",
+                    false,
+                  )
+                }
+                disabled={downloading === `submission-${selectedSubmission.id}`}
+                className="flex-1 min-w-[140px] flex items-center justify-center py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all text-sm shadow-lg shadow-indigo-100 disabled:opacity-50"
+              >
+                {downloading === `submission-${selectedSubmission.id}` ? (
+                  <Spinner size="sm" className="mr-2" />
+                ) : (
+                  <Download size={18} className="mr-2" />
+                )}
+                Download
+              </button>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all text-sm"
