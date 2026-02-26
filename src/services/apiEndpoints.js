@@ -35,6 +35,7 @@ export const STUDENTS = {
     DELETE: (id) => `${API_BASE}/student/${id}`,
     PROGRESS: (id) => `${API_BASE}/student/${id}/progress`,
     ASSIGNMENTS: (id) => `${API_BASE}/student/${id}/assignments`,
+    MY_ASSIGNMENTS: `${API_BASE}/student/my-assignments`,
     ATTENDANCE: (id) => `${API_BASE}/student/${id}/attendance`,
     FEES: (id) => `${API_BASE}/student/${id}/fees`,
 };

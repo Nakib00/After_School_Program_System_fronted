@@ -24,19 +24,37 @@ const SubmitWork = () => {
   const [assignments, setAssignments] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState("");
   const [file, setFile] = useState(null);
-  const [timeTaken, setTimeTaken] = useState("");
+  const [timeTaken, setTimeTaken] = useState(0);
   const [notes, setNotes] = useState("");
+
+  const currentAssignment = assignments.find(
+    (a) => a.id.toString() === selectedAssignment,
+  );
+
+  // Update time taken every minute based on assignment creation time
+  useEffect(() => {
+    if (!currentAssignment) return;
+
+    const calculateTime = () => {
+      const createdDate = new Date(currentAssignment.created_at);
+      const diffMs = Date.now() - createdDate.getTime();
+      const diffMins = Math.max(0, Math.floor(diffMs / 60000));
+      setTimeTaken(diffMins);
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 30000); // Check every 30 seconds
+
+    return () => clearInterval(timer);
+  }, [currentAssignment]);
 
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
         setLoading(true);
-        const studentId = user?.student?.id || user?.id;
-        if (!studentId) return;
-
-        const response = await studentService.getAssignments(studentId);
+        const response = await studentService.getMyAssignments();
         const pending = (response.data.data || []).filter(
-          (a) => a.status === "pending",
+          (a) => a.status === "assigned" || a.status === "pending",
         );
         setAssignments(pending);
 
@@ -78,7 +96,7 @@ const SubmitWork = () => {
       const formData = new FormData();
       formData.append("assignment_id", selectedAssignment);
       formData.append("submitted_file", file);
-      if (timeTaken) formData.append("time_taken_min", timeTaken);
+      formData.append("time_taken_min", timeTaken);
       if (notes) formData.append("notes", notes);
 
       await submissionService.create(formData);
@@ -93,10 +111,6 @@ const SubmitWork = () => {
       setSubmitting(false);
     }
   };
-
-  const currentAssignment = assignments.find(
-    (a) => a.id.toString() === selectedAssignment,
-  );
 
   if (loading) {
     return (
@@ -169,11 +183,14 @@ const SubmitWork = () => {
                 <input
                   type="number"
                   value={timeTaken}
-                  onChange={(e) => setTimeTaken(e.target.value)}
-                  placeholder="e.approx 20 mins"
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  readOnly
+                  placeholder="Calculating..."
+                  className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-200 rounded-xl outline-none text-gray-600 font-bold cursor-not-allowed"
                 />
               </div>
+              <p className="text-[10px] text-indigo-500 font-medium ml-1">
+                * Auto-calculated from assignment creation to submission
+              </p>
             </div>
             {/* Notes if needed, the controller doesn't explicitly handle notes but Submission model might */}
           </div>

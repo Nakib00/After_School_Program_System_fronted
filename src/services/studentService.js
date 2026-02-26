@@ -13,6 +13,7 @@ export const studentService = {
     }),
     delete: (id) => api.delete(STUDENTS.DELETE(id)),
     getAssignments: (id) => api.get(STUDENTS.ASSIGNMENTS(id)),
+    getMyAssignments: () => api.get(STUDENTS.MY_ASSIGNMENTS),
     getAttendance: (id) => api.get(STUDENTS.ATTENDANCE(id)),
     getFees: (id) => api.get(STUDENTS.FEES(id)),
     getProgress: (id) => api.get(STUDENTS.PROGRESS(id)),
