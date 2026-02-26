@@ -47,6 +47,7 @@ export const TEACHERS = {
     STUDENTS: (id) => `${API_BASE}/teacher/${id}/students`,
     ASSIGN_STUDENTS: `${API_BASE}/teacher/assign-students`,
     UNASSIGN_STUDENTS: `${API_BASE}/teacher/unassign-students`,
+    DASHBOARD: `${API_BASE}/teacher/dashboard`,
 };
 
 export const SUBJECTS = {

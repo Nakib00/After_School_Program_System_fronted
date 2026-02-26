@@ -85,7 +85,7 @@ const AttendanceModule = ({ role = "teacher" }) => {
         setHistory(historyRes.data.data || []);
       }
 
-      if (role !== "parents") {
+      if (role !== "parents" && role !== "teacher") {
         const summaryRes = await attendanceService.getSummary(params);
         setSummary(summaryRes.data.data || []);
       }
@@ -244,7 +244,7 @@ const AttendanceModule = ({ role = "teacher" }) => {
         </div>
       </div>
 
-      {role !== "parents" && summary.length > 0 && (
+      {role !== "parents" && role !== "teacher" && summary.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
