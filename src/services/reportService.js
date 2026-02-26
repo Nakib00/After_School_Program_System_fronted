@@ -8,4 +8,5 @@ export const reportService = {
     getFeesReport: (params) => api.get(REPORTS.FEES, { params }),
     getAttendanceReport: (params) => api.get(REPORTS.ATTENDANCE, { params }),
     getProgressReport: (params) => api.get(REPORTS.PROGRESS, { params }),
+    getChildrenReports: () => api.get(REPORTS.PARENT_CHILDREN),
 };

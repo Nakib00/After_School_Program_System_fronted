@@ -3,4 +3,5 @@ import { DASHBOARD } from './apiEndpoints';
 
 export const dashboardService = {
     getStats: (params) => api.get(DASHBOARD.STATS, { params }),
+    getParentDashboard: () => api.get(DASHBOARD.PARENT),
 };

@@ -9,4 +9,5 @@ export const feeService = {
     markAllOverdue: () => api.post(FEES.MARK_OVERDUE_ALL),
     getReport: (params) => api.get(FEES.REPORT, { params }),
     getUnpaidOverdue: (params) => api.get(FEES.UNPAID_OVERDUE, { params }),
+    getChildrenFees: () => api.get(FEES.PARENT_CHILDREN),
 };

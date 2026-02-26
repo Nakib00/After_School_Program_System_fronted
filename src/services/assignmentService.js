@@ -8,4 +8,5 @@ export const assignmentService = {
     bulkCreate: (data) => api.post(ASSIGNMENTS.BULK_CREATE, data),
     update: (id, data) => api.put(ASSIGNMENTS.UPDATE(id), data),
     remove: (id) => api.delete(ASSIGNMENTS.DELETE(id)),
+    getChildrenAssignments: () => api.get(ASSIGNMENTS.PARENT_CHILDREN),
 };

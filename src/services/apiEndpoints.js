@@ -86,6 +86,7 @@ export const ASSIGNMENTS = {
     DETAIL: (id) => `${API_BASE}/assignment/${id}`,
     UPDATE: (id) => `${API_BASE}/assignment/${id}`,
     DELETE: (id) => `${API_BASE}/assignment/${id}`,
+    PARENT_CHILDREN: `${API_BASE}/parent/children-assignments`,
 };
 
 export const SUBMISSIONS = {
@@ -105,6 +106,7 @@ export const ATTENDANCE = {
     UPDATE: (id) => `${API_BASE}/attendance/${id}`,
     SUMMARY: `${API_BASE}/attendance/summary`,
     TODAY: `${API_BASE}/attendance/today`,
+    PARENT_CHILDREN: `${API_BASE}/parent/children-attendance`,
 };
 
 export const FEES = {
@@ -116,10 +118,12 @@ export const FEES = {
     REPORT: `${API_BASE}/fees/report`,
     UNPAID_OVERDUE: `${API_BASE}/fees/unpaid-overdue`,
     PENDING: `${API_BASE}/fees/pending`,
+    PARENT_CHILDREN: `${API_BASE}/parent/children-fees`,
 };
 
 export const DASHBOARD = {
-    STATS: `${API_BASE}/dashboard/kpis`,
+    STATS: `${API_BASE}/dashboard/stats`,
+    PARENT: `${API_BASE}/parent/dashboard`,
 };
 
 export const REPORTS = {
@@ -129,6 +133,7 @@ export const REPORTS = {
     FEES: `${API_BASE}/reports/fees`,
     ATTENDANCE: `${API_BASE}/reports/attendance`,
     PROGRESS: `${API_BASE}/reports/progress`,
+    PARENT_CHILDREN: `${API_BASE}/parent/children-reports`,
 };
 
 export const NOTIFICATIONS = {

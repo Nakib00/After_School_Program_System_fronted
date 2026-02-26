@@ -7,4 +7,5 @@ export const attendanceService = {
     update: (id, data) => api.put(ATTENDANCE.UPDATE(id), data),
     getSummary: (params) => api.get(ATTENDANCE.SUMMARY, { params }),
     getToday: (params) => api.get(ATTENDANCE.TODAY, { params }),
+    getChildrenAttendance: () => api.get(ATTENDANCE.PARENT_CHILDREN),
 };
