@@ -95,6 +95,7 @@ export const SUBMISSIONS = {
     BY_ASSIGNMENT: (assignmentId) => `${API_BASE}/submission/assignment/${assignmentId}`,
     PENDING: `${API_BASE}/submission/pending`,
     GRADE: (id) => `${API_BASE}/submission/${id}/grade`,
+    UPDATE_GRADE: (id) => `${API_BASE}/submission/${id}/update-grade`,
     DOWNLOAD: (submissionId) => `${API_BASE}/submission/${submissionId}/download`,
 };
 

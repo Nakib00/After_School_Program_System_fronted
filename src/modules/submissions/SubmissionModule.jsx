@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Download,
   ExternalLink,
+  Filter,
 } from "lucide-react";
 import DataTable from "../../components/ui/DataTable";
 import Badge from "../../components/ui/Badge";
@@ -41,6 +42,7 @@ const SubmissionModule = ({ role = "teacher" }) => {
   const [submitting, setSubmitting] = useState(false);
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("submitted");
 
   const {
     register,
@@ -54,11 +56,11 @@ const SubmissionModule = ({ role = "teacher" }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await submissionService.getPending();
+      const res = await submissionService.getAll({ status: statusFilter });
       setSubmissions(res.data.data.data || []);
     } catch (error) {
-      console.error("Failed to fetch pending submissions:", error);
-      toast.error("Failed to load pending submissions");
+      console.error("Failed to fetch submissions:", error);
+      toast.error("Failed to load submissions");
     } finally {
       setLoading(false);
     }
@@ -66,14 +68,15 @@ const SubmissionModule = ({ role = "teacher" }) => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [statusFilter]);
 
   const handleGrade = (submission) => {
     setSelectedSubmission(submission);
     reset({
-      score: "",
-      error_count: 0,
-      teacher_feedback: "",
+      score: submission.status === "graded" ? submission.score : "",
+      error_count: submission.status === "graded" ? submission.error_count : 0,
+      teacher_feedback:
+        submission.status === "graded" ? submission.teacher_feedback : "",
     });
     setIsGradeModalOpen(true);
   };
@@ -81,7 +84,10 @@ const SubmissionModule = ({ role = "teacher" }) => {
   const onSubmitGrade = async (data) => {
     try {
       setSubmitting(true);
-      await submissionService.grade(selectedSubmission.id, data);
+      // Use the appropriate method based on whether it was already graded or not
+      // For this system, the user provided baseurl/submission/id/update-grade
+      await submissionService.updateGrade(selectedSubmission.id, data);
+
       toast.success("Submission graded successfully");
       setIsGradeModalOpen(false);
       fetchData();
@@ -138,15 +144,28 @@ const SubmissionModule = ({ role = "teacher" }) => {
       ),
     },
     {
+      header: "Status",
+      accessorKey: "status",
+      cell: ({ getValue }) => (
+        <Badge variant={getValue() === "graded" ? "green" : "blue"}>
+          {getValue()?.toUpperCase()}
+        </Badge>
+      ),
+    },
+    {
       header: "Action",
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
           <button
             onClick={() => handleGrade(row.original)}
-            className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm flex items-center"
+            className={`px-4 py-1.5 ${
+              row.original.status === "graded"
+                ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+            } text-sm font-bold rounded-lg transition-all flex items-center`}
           >
             <Award size={16} className="mr-1.5" />
-            Grade
+            {row.original.status === "graded" ? "Edit Grade" : "Grade"}
           </button>
           {row.original.submitted_file && (
             <a
@@ -169,11 +188,37 @@ const SubmissionModule = ({ role = "teacher" }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Grade Submissions
+            {statusFilter === "submitted"
+              ? "Pending Submissions"
+              : "Graded Submissions"}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Review and grade pending student worksheet submissions
+            {statusFilter === "submitted"
+              ? "Review and grade pending student worksheet submissions"
+              : "Review and update previously graded submissions"}
           </p>
+        </div>
+        <div className="flex items-center bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+          <button
+            onClick={() => setStatusFilter("submitted")}
+            className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+              statusFilter === "submitted"
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            Pending
+          </button>
+          <button
+            onClick={() => setStatusFilter("graded")}
+            className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+              statusFilter === "graded"
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            Graded
+          </button>
         </div>
       </div>
 
@@ -182,17 +227,27 @@ const SubmissionModule = ({ role = "teacher" }) => {
           <div className="p-20 text-center">
             <Spinner size="lg" />
             <p className="mt-4 text-gray-500 font-medium">
-              Loading pending submissions...
+              Loading submissions...
             </p>
           </div>
         ) : submissions.length === 0 ? (
           <div className="p-20 text-center">
-            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center text-green-500 mx-auto mb-4">
-              <CheckCircle2 size={32} />
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mx-auto mb-4">
+              {statusFilter === "submitted" ? (
+                <CheckCircle2 size={32} />
+              ) : (
+                <FileText size={32} />
+              )}
             </div>
-            <h3 className="text-lg font-bold text-gray-900">All Caught Up!</h3>
+            <h3 className="text-lg font-bold text-gray-900">
+              {statusFilter === "submitted"
+                ? "All Caught Up!"
+                : "No Graded Work"}
+            </h3>
             <p className="text-gray-500 mt-1">
-              There are no pending submissions to grade at the moment.
+              {statusFilter === "submitted"
+                ? "There are no pending submissions to grade at the moment."
+                : "You haven't graded any submissions yet."}
             </p>
           </div>
         ) : (
@@ -204,7 +259,11 @@ const SubmissionModule = ({ role = "teacher" }) => {
       <Modal
         isOpen={isGradeModalOpen}
         onClose={() => !submitting && setIsGradeModalOpen(false)}
-        title="Grade Assignment Submission"
+        title={
+          selectedSubmission?.status === "graded"
+            ? "Update Submission Grade"
+            : "Grade Assignment Submission"
+        }
         size="lg"
       >
         {selectedSubmission && (
@@ -312,9 +371,9 @@ const SubmissionModule = ({ role = "teacher" }) => {
                     size={20}
                   />
                   <p className="text-xs text-orange-700 italic">
-                    Please review the student's submission carefully before
-                    assigning a final score. Feedback is encouraged for student
-                    progress.
+                    {selectedSubmission.status === "graded"
+                      ? "You are updating a previously assigned grade. This will recalculate the student's progress."
+                      : "Please review the student's submission carefully before assigning a final score. Feedback is encouraged for student progress."}
                   </p>
                 </div>
 
@@ -390,7 +449,9 @@ const SubmissionModule = ({ role = "teacher" }) => {
                   ) : (
                     <>
                       <Award size={18} className="mr-2" />
-                      Post Grade
+                      {selectedSubmission.status === "graded"
+                        ? "Update Grade"
+                        : "Post Grade"}
                     </>
                   )}
                 </button>

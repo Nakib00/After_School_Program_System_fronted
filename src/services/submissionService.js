@@ -10,5 +10,6 @@ export const submissionService = {
     }),
     getByAssignment: (assignmentId) => api.get(SUBMISSIONS.BY_ASSIGNMENT(assignmentId)),
     grade: (id, data) => api.patch(SUBMISSIONS.GRADE(id), data),
+    updateGrade: (id, data) => api.patch(SUBMISSIONS.UPDATE_GRADE(id), data),
     download: (submissionId) => api.get(SUBMISSIONS.DOWNLOAD(submissionId), { responseType: 'blob' }),
 };
