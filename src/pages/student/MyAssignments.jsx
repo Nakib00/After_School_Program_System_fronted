@@ -16,6 +16,7 @@ import Spinner from "../../components/ui/Spinner";
 import { studentService } from "../../services/studentService";
 import { submissionService } from "../../services/submissionService";
 import { assignmentService } from "../../services/assignmentService";
+import { worksheetService } from "../../services/worksheetService";
 import { useAuthStore } from "../../store/authStore";
 import Modal from "../../components/ui/Modal";
 import { useNavigate } from "react-router-dom";
@@ -32,6 +33,7 @@ const MyAssignments = () => {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [downloading, setDownloading] = useState(null);
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -77,6 +79,29 @@ const MyAssignments = () => {
       setIsInfoModalOpen(false);
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  const handleDownload = async (worksheetId, title) => {
+    try {
+      setDownloading(worksheetId);
+      const response = await worksheetService.download(worksheetId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `${title.replace(/\s+/g, "_")}_Worksheet.pdf`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Worksheet download started");
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Failed to download worksheet");
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -178,15 +203,25 @@ const MyAssignments = () => {
               </div>
 
               <div className="flex space-x-3 mt-auto">
-                <a
-                  href={WORKSHEETS.DOWNLOAD(assignment.worksheet?.id)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-1 flex items-center justify-center py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium border border-gray-100"
+                <button
+                  onClick={() =>
+                    handleDownload(
+                      assignment.worksheet?.id,
+                      assignment.worksheet?.title,
+                    )
+                  }
+                  disabled={downloading === assignment.worksheet?.id}
+                  className="flex-1 flex items-center justify-center py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium border border-gray-100 disabled:opacity-50"
                 >
-                  <Download size={16} className="mr-2" />
-                  View Worksheet
-                </a>
+                  {downloading === assignment.worksheet?.id ? (
+                    <Spinner size="sm" className="mr-2" />
+                  ) : (
+                    <Download size={16} className="mr-2" />
+                  )}
+                  {downloading === assignment.worksheet?.id
+                    ? "Downloading..."
+                    : "View Worksheet"}
+                </button>
                 {(assignment.status === "submitted" ||
                   assignment.status === "graded") && (
                   <button
@@ -459,16 +494,25 @@ const MyAssignments = () => {
             )}
 
             <div className="pt-4 flex space-x-4">
-              <a
-                href={WORKSHEETS.DOWNLOAD(selectedAssignmentInfo.worksheet?.id)}
-                download
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 flex items-center justify-center py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all text-sm shadow-lg shadow-indigo-100"
+              <button
+                onClick={() =>
+                  handleDownload(
+                    selectedAssignmentInfo.worksheet?.id,
+                    selectedAssignmentInfo.worksheet?.title,
+                  )
+                }
+                disabled={downloading === selectedAssignmentInfo.worksheet?.id}
+                className="flex-1 flex items-center justify-center py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all text-sm shadow-lg shadow-indigo-100 disabled:opacity-50"
               >
-                <Download size={18} className="mr-2" />
-                Download Worksheet
-              </a>
+                {downloading === selectedAssignmentInfo.worksheet?.id ? (
+                  <Spinner size="sm" className="mr-2" />
+                ) : (
+                  <Download size={18} className="mr-2" />
+                )}
+                {downloading === selectedAssignmentInfo.worksheet?.id
+                  ? "Downloading..."
+                  : "Download Worksheet"}
+              </button>
               <button
                 onClick={() => setIsInfoModalOpen(false)}
                 className="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all text-sm"
