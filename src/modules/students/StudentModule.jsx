@@ -27,6 +27,7 @@ import { studentService } from "../../services/studentService";
 import { centerService } from "../../services/centerService";
 import { teacherService } from "../../services/teacherService";
 import { adminService } from "../../services/adminService";
+import { subjectService } from "../../services/subjectService";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -61,6 +62,7 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
   const [centers, setCenters] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [parents, setParents] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -119,6 +121,11 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
         fetchPromises.push(centerService.getAll());
       }
 
+      // Always fetch subjects for creation/editing
+      if (role === "super_admin" || role === "center_admin") {
+        fetchPromises.push(subjectService.getAllActive());
+      }
+
       const results = await Promise.all(fetchPromises);
 
       // result[0] is always students
@@ -131,13 +138,18 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
 
       setStudents(studentList);
 
+      let nextIndex = 1;
       if (role !== "student" && role !== "parents") {
-        setTeachers(results[1]?.data?.data || []);
-        setParents(results[2]?.data?.data || []);
+        setTeachers(results[nextIndex++]?.data?.data || []);
+        setParents(results[nextIndex++]?.data?.data || []);
       }
 
-      if (role === "super_admin" && results[3]) {
-        setCenters(results[3]?.data?.data || []);
+      if (role === "super_admin") {
+        setCenters(results[nextIndex++]?.data?.data || []);
+      }
+
+      if (role === "super_admin" || role === "center_admin") {
+        setAvailableSubjects(results[nextIndex++]?.data?.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -577,6 +589,35 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700">
+                  Registered Subjects
+                </label>
+                <div className="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200 min-h-[100px] overflow-y-auto max-h-[150px]">
+                  {availableSubjects.map((subject) => (
+                    <label
+                      key={subject.id}
+                      className="flex items-center space-x-2 cursor-pointer hover:bg-white p-1 rounded-md transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        value={subject.name}
+                        {...register("subjects")}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                      />
+                      <span className="text-xs font-medium text-gray-700">
+                        {subject.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {availableSubjects.length === 0 && (
+                  <p className="text-xs text-gray-400 italic">
+                    No active subjects found
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">

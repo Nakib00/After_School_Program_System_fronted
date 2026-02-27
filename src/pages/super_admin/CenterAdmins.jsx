@@ -93,14 +93,25 @@ const CenterAdmins = () => {
     {
       header: "Name",
       accessorKey: "name",
-      cell: (info) => (
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-            <UserIcon size={14} className="text-blue-600" />
+      cell: (info) => {
+        const admin = info.row.original;
+        return (
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3 overflow-hidden border border-gray-100">
+              {admin.profile_photo_path ? (
+                <img
+                  src={admin.profile_photo_path}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserIcon size={20} className="text-blue-600" />
+              )}
+            </div>
+            <span className="font-medium text-gray-900">{info.getValue()}</span>
           </div>
-          <span className="font-medium text-gray-900">{info.getValue()}</span>
-        </div>
-      ),
+        );
+      },
     },
     { header: "Email", accessorKey: "email" },
     { header: "Phone", accessorKey: "phone" },

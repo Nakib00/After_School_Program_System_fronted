@@ -124,6 +124,8 @@ export const FEES = {
 export const DASHBOARD = {
     STATS: `${API_BASE}/dashboard/stats`,
     PARENT: `${API_BASE}/parent/dashboard`,
+    SUPER_ADMIN: `${API_BASE}/super-admin/dashboard`,
+    KPIS: `${API_BASE}/dashboard/kpis`,
 };
 
 export const REPORTS = {
@@ -134,6 +136,14 @@ export const REPORTS = {
     ATTENDANCE: `${API_BASE}/reports/attendance`,
     PROGRESS: `${API_BASE}/reports/progress`,
     PARENT_CHILDREN: `${API_BASE}/parent/children-reports`,
+    // New Reports
+    CENTER_PERFORMANCE: `${API_BASE}/reports/center-performance`,
+    TEACHER_PERFORMANCE: `${API_BASE}/reports/teacher-performance`,
+    STUDENT_DETAILED: (id) => `${API_BASE}/reports/student-detailed/${id}`,
+    FEE_COLLECTION: `${API_BASE}/reports/fee-collection`,
+    ATTENDANCE_REPORT: `${API_BASE}/reports/attendance`,
+    LEVEL_PROGRESSION: `${API_BASE}/reports/level-progression`,
+    FULL_SYSTEM: `${API_BASE}/reports/full-system`,
 };
 
 export const NOTIFICATIONS = {
