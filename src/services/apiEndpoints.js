@@ -145,6 +145,7 @@ export const REPORTS = {
     PARENT_CHILDREN: `${API_BASE}/parent/children-reports`,
     // New Reports
     CENTER_PERFORMANCE: `${API_BASE}/reports/center-performance`,
+    CENTER_DETAILED: (id) => `${API_BASE}/reports/center-detailed/${id}`,
     TEACHER_PERFORMANCE: `${API_BASE}/reports/teacher-performance`,
     STUDENT_DETAILED: (id) => `${API_BASE}/reports/student-detailed/${id}`,
     FEE_COLLECTION: `${API_BASE}/reports/fee-collection`,
