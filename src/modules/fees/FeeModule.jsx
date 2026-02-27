@@ -11,6 +11,10 @@ import {
   Clock,
   Download,
   Search,
+  Eye,
+  Phone,
+  MapPin,
+  Users,
 } from "lucide-react";
 import DataTable from "../../components/ui/DataTable";
 import Badge from "../../components/ui/Badge";
@@ -45,6 +49,7 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [selectedFee, setSelectedFee] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const {
     register,
@@ -137,6 +142,28 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
     }
   };
 
+  const handleMarkOverdue = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to mark all past-due unpaid fees as overdue?",
+      )
+    )
+      return;
+    try {
+      setSubmitting(true);
+      const { data } = await feeService.markAllOverdue();
+      toast.success(
+        data.message ||
+          `Marked ${data.data?.updated_count || 0} fees as overdue`,
+      );
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to update overdue fees");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const columns = [
     {
       header: "Invoice",
@@ -162,12 +189,17 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
       accessorKey: "student.name",
       cell: ({ row }) => (
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2 text-gray-500">
+          <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center mr-3 text-indigo-600 border border-indigo-100 flex-shrink-0">
             <User size={14} />
           </div>
-          <span className="font-medium text-gray-700">
-            {row.original.student?.name}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-bold text-gray-900 leading-tight">
+              {row.original.student?.user?.name || "N/A"}
+            </span>
+            <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">
+              ID: {row.original.student?.enrollment_no || "N/A"}
+            </span>
+          </div>
         </div>
       ),
     },
@@ -175,7 +207,7 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
       header: "Amount",
       accessorKey: "amount",
       cell: ({ getValue }) => (
-        <span className="font-bold text-gray-900">${getValue()}</span>
+        <span className="font-bold text-gray-900">৳{getValue()}</span>
       ),
     },
     {
@@ -217,7 +249,17 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
               Record Payment
             </button>
           )}
-          <button className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={() => {
+              setSelectedFee(row.original);
+              setIsViewModalOpen(true);
+            }}
+            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+            title="View Details"
+          >
+            <Eye size={18} />
+          </button>
+          <button className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-transparent hover:border-gray-200">
             <Download size={18} />
           </button>
         </div>
@@ -244,14 +286,25 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
               : "Track and manage student invoices and payments"}
           </p>
         </div>
-        {role !== "parents" && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg font-semibold"
-          >
-            <Plus size={18} className="mr-2" /> Generate Monthly Fees
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {role !== "parents" && (
+            <button
+              onClick={handleMarkOverdue}
+              disabled={submitting}
+              className="flex items-center justify-center px-4 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition-all font-semibold"
+            >
+              <AlertCircle size={18} className="mr-2" /> Mark Overdue
+            </button>
+          )}
+          {role !== "parents" && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg font-semibold"
+            >
+              <Plus size={18} className="mr-2" /> Generate Monthly Fees
+            </button>
+          )}
+        </div>
       </div>
 
       {role !== "parents" && report.length > 0 && (
@@ -280,7 +333,7 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
                 </div>
                 <div className="flex items-baseline justify-between">
                   <h3 className="text-2xl font-bold text-gray-900">
-                    ${Number(stats.total_amount).toLocaleString()}
+                    ৳{Number(stats.total_amount).toLocaleString()}
                   </h3>
                   <span className="text-sm text-gray-500">
                     {stats.count} Records
@@ -395,7 +448,7 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
               Total Amount Due
             </p>
             <p className="text-3xl font-bold text-green-700">
-              ${selectedFee?.amount}
+              ৳{selectedFee?.amount}
             </p>
           </div>
 
@@ -462,6 +515,230 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
             </button>
           </div>
         </form>
+      </Modal>
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        title="Fee Details"
+        size="md"
+      >
+        {selectedFee && (
+          <div className="space-y-6 pb-2">
+            {/* Premium Header with Profile Image */}
+            <div className="relative p-6 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl text-white overflow-hidden shadow-xl mb-4">
+              <div className="relative z-10 flex items-center space-x-6">
+                <div className="w-24 h-24 rounded-2xl border-2 border-white/20 overflow-hidden bg-white/10 backdrop-blur-sm flex-shrink-0 shadow-inner group transition-all">
+                  {selectedFee.student?.user?.profile_photo_path ? (
+                    <img
+                      src={selectedFee.student.user.profile_photo_path}
+                      alt={selectedFee.student.user.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/50">
+                      <User size={40} strokeWidth={1} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 opacity-80 mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                      {selectedFee.center?.name || "Premium LMS Student"}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black tracking-tight leading-tight mb-2">
+                    {selectedFee.student?.user?.name || "N/A"}
+                  </h3>
+                  <div className="flex flex-wrap gap-3 mt-1">
+                    <span className="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">
+                      ID: {selectedFee.student?.enrollment_no || "N/A"}
+                    </span>
+                    <Badge
+                      variant={
+                        selectedFee.status === "paid"
+                          ? "green"
+                          : selectedFee.status === "overdue"
+                            ? "red"
+                            : "orange"
+                      }
+                      className="bg-white/10 text-white border-white/20 backdrop-blur-md px-3 py-1 font-black text-[10px] uppercase tracking-wider"
+                    >
+                      {selectedFee.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="text-right hidden sm:block">
+                  <p className="text-[10px] font-bold opacity-60 uppercase mb-1">
+                    {selectedFee.invoice_no || `INV-${selectedFee.id}`}
+                  </p>
+                  <p className="text-3xl font-black">
+                    ৳{Number(selectedFee.amount).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {/* Decorative background circle */}
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Parent & Contact Info Card */}
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest flex items-center">
+                    <Users size={14} className="mr-2" /> Guardian Info
+                  </h4>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <div className="p-2 bg-indigo-50 rounded-lg mr-3 text-indigo-600">
+                      <User size={14} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">
+                        Parent Name
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {selectedFee.student?.parent?.name || "Not Mentioned"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="p-2 bg-indigo-50 rounded-lg mr-3 text-indigo-600">
+                      <Phone size={14} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">
+                        Contact Phone
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {selectedFee.student?.parent?.phone || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="p-2 bg-indigo-50 rounded-lg mr-3 text-indigo-600">
+                      <MapPin size={14} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">
+                        Installation Address
+                      </p>
+                      <p className="text-xs font-medium text-gray-600 leading-relaxed max-w-[200px]">
+                        {selectedFee.student?.user?.address || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Billing & Payment Summary Card */}
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
+                  <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest flex items-center">
+                    <FileText size={14} className="mr-2" /> Invoice Summary
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-sm font-bold">
+                      <span className="text-gray-400 text-[10px] uppercase">
+                        Billing Month
+                      </span>
+                      <span className="text-gray-900">
+                        {new Date(selectedFee.month + "-01").toLocaleDateString(
+                          "en-US",
+                          { month: "long", year: "numeric" },
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm font-bold">
+                      <span className="text-gray-400 text-[10px] uppercase">
+                        Due Date
+                      </span>
+                      <span className="text-gray-900">
+                        {new Date(selectedFee.due_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-200/50 flex justify-between items-end">
+                      <span className="text-gray-400 text-[10px] uppercase font-black">
+                        Current Outstanding
+                      </span>
+                      <span className="text-2xl font-black text-indigo-600 leading-none">
+                        ৳{Number(selectedFee.amount).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Specific Footer Note */}
+                {selectedFee.status === "paid" ? (
+                  <div className="bg-green-50 p-4 rounded-xl border border-green-100 flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CheckCircle size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-green-900">
+                        Payment Realized
+                      </p>
+                      <p className="text-[10px] text-green-600 font-medium">
+                        Via {selectedFee.payment_method} on{" "}
+                        {new Date(selectedFee.paid_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Clock size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-amber-900">
+                        Payment Pending
+                      </p>
+                      <p className="text-[10px] text-amber-600 font-medium">
+                        Last notification sent recently
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Transactional Details (Expanded for Paid only) */}
+            {selectedFee.status === "paid" && selectedFee.transaction_id && (
+              <div className="mt-4 p-4 border border-indigo-100 rounded-2xl bg-white flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-indigo-600">
+                    <CheckCircle size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      Transaction Reference
+                    </p>
+                    <p className="text-xs font-mono font-bold text-gray-900">
+                      {selectedFee.transaction_id}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Receipt
+                  </p>
+                  <button className="text-[10px] font-bold text-indigo-600 underline hover:text-indigo-800">
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="px-8 py-2.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

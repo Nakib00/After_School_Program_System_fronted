@@ -15,6 +15,7 @@ import {
   PieChart,
 } from "lucide-react";
 import { reportService } from "../../services/reportService";
+import { feeService } from "../../services/feeService";
 import Spinner from "../../components/ui/Spinner";
 import { toast } from "react-hot-toast";
 
@@ -23,6 +24,7 @@ const SuperAdminReports = () => {
   const [reportData, setReportData] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [performanceData, setPerformanceData] = useState([]);
+  const [feeStatusReport, setFeeStatusReport] = useState([]);
   const [fetchingPerformance, setFetchingPerformance] = useState(false);
 
   useEffect(() => {
@@ -44,8 +46,12 @@ const SuperAdminReports = () => {
   const fetchPerformance = async () => {
     try {
       setFetchingPerformance(true);
-      const { data } = await reportService.getTeacherPerformance();
-      setPerformanceData(data.data);
+      const [perfRes, feeStatusRes] = await Promise.all([
+        reportService.getTeacherPerformance(),
+        feeService.getReport(),
+      ]);
+      setPerformanceData(perfRes.data.data);
+      setFeeStatusReport(feeStatusRes.data.data);
     } catch (error) {
       console.error("Failed to fetch performance data:", error);
       toast.error("Failed to load performance metrics");
@@ -307,30 +313,77 @@ const SuperAdminReports = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-2xl border border-indigo-100">
-          <h4 className="font-bold text-indigo-900 mb-2 flex items-center">
-            <BookOpen size={16} className="mr-2" />
-            System Academic Health
-          </h4>
-          <p className="text-xs text-indigo-700 leading-relaxed">
-            The system currently maintains an average academic score of{" "}
-            <strong>
-              {Number(academic_summary.avg_system_score).toFixed(1)}%
-            </strong>{" "}
-            across all centers. Graduation rates and level progression are
-            within target parameters.
-          </p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-50">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center">
+              <Wallet className="mr-2 text-indigo-600" size={20} />
+              Fee Collection Status
+            </h3>
+          </div>
+          <div className="p-6 space-y-4">
+            {feeStatusReport.map((item, idx) => {
+              const statusColor =
+                item.status === "paid"
+                  ? "bg-green-500"
+                  : item.status === "overdue"
+                    ? "bg-red-500"
+                    : "bg-amber-500";
+              const percentage =
+                (Number(item.total_amount) /
+                  feeStatusReport.reduce(
+                    (acc, curr) => acc + Number(curr.total_amount),
+                    0,
+                  )) *
+                100;
+
+              return (
+                <div key={idx}>
+                  <div className="flex justify-between items-center text-sm mb-1.5">
+                    <span className="font-bold text-gray-700 capitalize">
+                      {item.status} ({item.count})
+                    </span>
+                    <span className="font-bold text-gray-900">
+                      ৳{Number(item.total_amount).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-50 h-2 rounded-full overflow-hidden">
+                    <div
+                      className={`${statusColor} h-full transition-all duration-700`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="p-6 bg-gradient-to-br from-amber-50 to-white rounded-2xl border border-amber-100">
-          <h4 className="font-bold text-amber-900 mb-2 flex items-center">
-            <TrendingUp size={16} className="mr-2" />
-            Operational Efficiency
-          </h4>
-          <p className="text-xs text-amber-700 leading-relaxed">
-            Center performance is monitored via student retention and fee
-            collection rates. Overall system collection rate is{" "}
-            <strong>{financial_summary.collection_rate}%</strong>.
-          </p>
+
+        <div className="grid grid-cols-1 gap-6">
+          <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-2xl border border-indigo-100">
+            <h4 className="font-bold text-indigo-900 mb-2 flex items-center">
+              <BookOpen size={16} className="mr-2" />
+              System Academic Health
+            </h4>
+            <p className="text-xs text-indigo-700 leading-relaxed">
+              The system currently maintains an average academic score of{" "}
+              <strong>
+                {Number(academic_summary.avg_system_score).toFixed(1)}%
+              </strong>{" "}
+              across all centers. Graduation rates and level progression are
+              within target parameters.
+            </p>
+          </div>
+          <div className="p-6 bg-gradient-to-br from-amber-50 to-white rounded-2xl border border-amber-100">
+            <h4 className="font-bold text-amber-900 mb-2 flex items-center">
+              <TrendingUp size={16} className="mr-2" />
+              Operational Efficiency
+            </h4>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Center performance is monitored via student retention and fee
+              collection rates. Overall system collection rate is{" "}
+              <strong>{financial_summary.collection_rate}%</strong>.
+            </p>
+          </div>
         </div>
       </div>
     </div>
