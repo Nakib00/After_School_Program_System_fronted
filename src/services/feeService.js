@@ -3,6 +3,7 @@ import { FEES } from './apiEndpoints';
 
 export const feeService = {
     getAll: (params) => api.get(FEES.LIST, { params }),
+    getByCenter: (centerId) => api.get(FEES.BY_CENTER(centerId)),
     generate: (data) => api.post(FEES.GENERATE, data),
     getById: (id) => api.get(FEES.DETAIL(id)),
     update: (id, data) => api.put(FEES.UPDATE(id), data),

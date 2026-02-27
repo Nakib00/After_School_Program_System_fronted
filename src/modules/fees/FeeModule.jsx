@@ -107,8 +107,16 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
     try {
       setLoading(true);
       const params = { ...initialFilters };
+
+      // Determine center_id for specialized fetching if applicable
+      const activeCenterId =
+        initialFilters.center_id ||
+        (role === "center_admin" ? user?.center_id : null);
+
       const [feesRes, centersRes, studentsRes, reportRes] = await Promise.all([
-        feeService.getAll(params),
+        activeCenterId
+          ? feeService.getByCenter(activeCenterId)
+          : feeService.getAll(params),
         role === "super_admin"
           ? centerService.getAll()
           : Promise.resolve({ data: { data: [] } }),
@@ -894,10 +902,16 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
                 <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
                   Payment Method
                 </label>
-                <input
+                <select
                   {...registerEdit("payment_method")}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-gray-900"
-                />
+                >
+                  <option value="">Select Method</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Mobile Banking">Mobile Banking</option>
+                </select>
               </div>
 
               <div className="space-y-1.5">

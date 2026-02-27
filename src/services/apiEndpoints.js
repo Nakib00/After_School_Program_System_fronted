@@ -116,6 +116,7 @@ export const ATTENDANCE = {
 
 export const FEES = {
     LIST: `${API_BASE}/fees`,
+    BY_CENTER: (centerId) => `${API_BASE}/fees/center/${centerId}`,
     GENERATE: `${API_BASE}/fees/generate`,
     DETAIL: (id) => `${API_BASE}/fees/${id}`,
     UPDATE: (id) => `${API_BASE}/fees/${id}`,
