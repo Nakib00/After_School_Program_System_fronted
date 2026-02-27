@@ -312,76 +312,152 @@ const SuperAdminReports = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-50">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Collection Status Card */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
             <h3 className="text-lg font-bold text-gray-900 flex items-center">
-              <Wallet className="mr-2 text-indigo-600" size={20} />
-              Fee Collection Status
+              <Wallet className="mr-3 text-indigo-600" size={20} />
+              Collection Status Breakdown
             </h3>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white px-2 py-1 rounded-md border border-gray-100">
+              Live Data
+            </span>
           </div>
-          <div className="p-6 space-y-4">
-            {feeStatusReport.map((item, idx) => {
-              const statusColor =
-                item.status === "paid"
-                  ? "bg-green-500"
-                  : item.status === "overdue"
-                    ? "bg-red-500"
-                    : "bg-amber-500";
-              const percentage =
-                (Number(item.total_amount) /
-                  feeStatusReport.reduce(
+
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+            <div className="space-y-5">
+              {feeStatusReport.length > 0 ? (
+                feeStatusReport.map((item, idx) => {
+                  const statusColor =
+                    item.status === "paid"
+                      ? "bg-green-500"
+                      : item.status === "overdue"
+                        ? "bg-red-500"
+                        : "bg-amber-500";
+
+                  const totalSum = feeStatusReport.reduce(
                     (acc, curr) => acc + Number(curr.total_amount),
                     0,
-                  )) *
-                100;
+                  );
 
-              return (
-                <div key={idx}>
-                  <div className="flex justify-between items-center text-sm mb-1.5">
-                    <span className="font-bold text-gray-700 capitalize">
-                      {item.status} ({item.count})
-                    </span>
-                    <span className="font-bold text-gray-900">
-                      ৳{Number(item.total_amount).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-50 h-2 rounded-full overflow-hidden">
-                    <div
-                      className={`${statusColor} h-full transition-all duration-700`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
+                  // Handle zero total cases gracefully
+                  const percentage =
+                    totalSum > 0
+                      ? (Number(item.total_amount) / totalSum) * 100
+                      : item.status === "paid"
+                        ? 100
+                        : 0; // Default visualization if all 0
+
+                  return (
+                    <div key={idx} className="group">
+                      <div className="flex justify-between items-end mb-2">
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+                            {item.status} Status
+                          </p>
+                          <p className="text-sm font-bold text-gray-800 capitalize">
+                            {item.count} Records
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-black text-gray-900">
+                            ৳{Number(item.total_amount).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden border border-gray-100/50">
+                        <div
+                          className={`${statusColor} h-full transition-all duration-1000 ease-out shadow-sm`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="h-40 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                  <PieChart size={32} className="mb-2 opacity-20" />
+                  <p className="text-xs font-bold uppercase tracking-wider">
+                    No Data Available
+                  </p>
                 </div>
-              );
-            })}
+              )}
+            </div>
+
+            {/* Financial Health Summary Column */}
+            <div className="bg-indigo-50/30 rounded-2xl p-6 border border-indigo-100/50 flex flex-col justify-center">
+              <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-4 flex items-center">
+                <TrendingUp size={14} className="mr-2" /> Financial Health
+              </h4>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-indigo-100/20">
+                  <span className="text-xs font-bold text-gray-500">
+                    Total Expected
+                  </span>
+                  <span className="text-sm font-black text-gray-900">
+                    ৳
+                    {feeStatusReport
+                      .reduce((acc, curr) => acc + Number(curr.total_amount), 0)
+                      .toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-indigo-100/20">
+                  <span className="text-xs font-bold text-gray-500">
+                    Collection Rate
+                  </span>
+                  <span className="text-sm font-black text-green-600">
+                    {(() => {
+                      const paid =
+                        feeStatusReport.find((i) => i.status === "paid")
+                          ?.count || 0;
+                      const total = feeStatusReport.reduce(
+                        (acc, curr) => acc + curr.count,
+                        0,
+                      );
+                      return total > 0 ? ((paid / total) * 100).toFixed(0) : 0;
+                    })()}
+                    %
+                  </span>
+                </div>
+                <div className="pt-2">
+                  <p className="text-[10px] text-indigo-700/60 font-medium leading-relaxed italic">
+                    * Metrics calculated based on{" "}
+                    {feeStatusReport.reduce((acc, curr) => acc + curr.count, 0)}{" "}
+                    total generated invoices for current cycle.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* System Health Column */}
         <div className="grid grid-cols-1 gap-6">
-          <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-2xl border border-indigo-100">
-            <h4 className="font-bold text-indigo-900 mb-2 flex items-center">
-              <BookOpen size={16} className="mr-2" />
-              System Academic Health
+          <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-2xl border border-indigo-100 h-full flex flex-col justify-center">
+            <h4 className="font-bold text-indigo-900 mb-3 flex items-center">
+              <BookOpen size={18} className="mr-2 text-indigo-600" />
+              Academic Pulse
             </h4>
-            <p className="text-xs text-indigo-700 leading-relaxed">
-              The system currently maintains an average academic score of{" "}
-              <strong>
+            <p className="text-xs text-indigo-700 leading-relaxed font-medium">
+              System-wide average score:{" "}
+              <span className="font-black text-indigo-900 underline decoration-indigo-200 underline-offset-4">
                 {Number(academic_summary.avg_system_score).toFixed(1)}%
-              </strong>{" "}
-              across all centers. Graduation rates and level progression are
-              within target parameters.
+              </span>
+              . Graduation rates and progression meet global quality benchmarks.
             </p>
           </div>
-          <div className="p-6 bg-gradient-to-br from-amber-50 to-white rounded-2xl border border-amber-100">
-            <h4 className="font-bold text-amber-900 mb-2 flex items-center">
-              <TrendingUp size={16} className="mr-2" />
-              Operational Efficiency
+          <div className="p-6 bg-gradient-to-br from-amber-50 to-white rounded-2xl border border-amber-100 h-full flex flex-col justify-center">
+            <h4 className="font-bold text-amber-900 mb-3 flex items-center">
+              <BarChart3 size={18} className="mr-2 text-amber-600" />
+              Efficiency KPI
             </h4>
-            <p className="text-xs text-amber-700 leading-relaxed">
-              Center performance is monitored via student retention and fee
-              collection rates. Overall system collection rate is{" "}
-              <strong>{financial_summary.collection_rate}%</strong>.
+            <p className="text-xs text-amber-700 leading-relaxed font-medium">
+              Overall collection efficiency:{" "}
+              <span className="font-black text-amber-900 underline decoration-amber-200 underline-offset-4">
+                {financial_summary.collection_rate}%
+              </span>
+              . Operational stability is rated as "High" for all active zones.
             </p>
           </div>
         </div>

@@ -24,6 +24,7 @@ import FileUpload from "../../components/ui/FileUpload";
 import { teacherService } from "../../services/teacherService";
 import { centerService } from "../../services/centerService";
 import { adminService } from "../../services/adminService";
+import { userService } from "../../services/userService";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -173,6 +174,22 @@ const TeacherModule = ({ role = "super_admin", initialFilters = {} }) => {
     }
   };
 
+  const handleToggleStatus = async (teacher) => {
+    try {
+      const teacherUserId = teacher.user_id || teacher.user?.id;
+      if (!teacherUserId) {
+        toast.error("User ID not found for this teacher");
+        return;
+      }
+      await userService.toggleStatus(teacherUserId);
+      toast.success(`Status updated for ${teacher.user?.name || teacher.name}`);
+      fetchData();
+    } catch (error) {
+      console.error("Status toggle failed:", error);
+      toast.error(error.response?.data?.message || "Failed to update status");
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
       setSubmitting(true);
@@ -269,11 +286,21 @@ const TeacherModule = ({ role = "super_admin", initialFilters = {} }) => {
     {
       header: "Status",
       accessorKey: "user.is_active",
-      cell: ({ getValue }) => (
-        <Badge variant={getValue() ? "green" : "red"}>
-          {getValue() ? "Active" : "Inactive"}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const teacher = row.original;
+        return (
+          <button
+            onClick={() => handleToggleStatus(teacher)}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all hover:ring-2 hover:ring-offset-1 ${
+              teacher.user?.is_active
+                ? "bg-green-100 text-green-700 hover:ring-green-300"
+                : "bg-gray-100 text-gray-500 hover:ring-gray-300"
+            }`}
+          >
+            {teacher.user?.is_active ? "Active" : "Inactive"}
+          </button>
+        );
+      },
     },
     {
       header: "Actions",

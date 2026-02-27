@@ -28,6 +28,7 @@ import { centerService } from "../../services/centerService";
 import { teacherService } from "../../services/teacherService";
 import { adminService } from "../../services/adminService";
 import { subjectService } from "../../services/subjectService";
+import { userService } from "../../services/userService";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -269,6 +270,22 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
     }
   };
 
+  const handleToggleStatus = async (student) => {
+    try {
+      const studentUserId = student.user_id || student.user?.id;
+      if (!studentUserId) {
+        toast.error("User ID not found for this student");
+        return;
+      }
+      await userService.toggleStatus(studentUserId);
+      toast.success(`Status updated for ${student.user?.name || student.name}`);
+      fetchData();
+    } catch (error) {
+      console.error("Status toggle failed:", error);
+      toast.error(error.response?.data?.message || "Failed to update status");
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
       setSubmitting(true);
@@ -368,19 +385,21 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
     {
       header: "Status",
       accessorKey: "status",
-      cell: ({ getValue }) => (
-        <Badge
-          variant={
-            getValue() === "active"
-              ? "green"
-              : getValue() === "completed"
-                ? "blue"
-                : "red"
-          }
-        >
-          {getValue()?.toUpperCase()}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const student = row.original;
+        return (
+          <button
+            onClick={() => handleToggleStatus(student)}
+            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:ring-2 hover:ring-offset-1 ${
+              student.user?.is_active
+                ? "bg-green-100 text-green-700 hover:ring-green-300"
+                : "bg-gray-100 text-gray-500 hover:ring-gray-300"
+            }`}
+          >
+            {student.user?.is_active ? "Active" : "Inactive"}
+          </button>
+        );
+      },
     },
     {
       header: "Actions",

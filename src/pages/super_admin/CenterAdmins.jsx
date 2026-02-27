@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Mail, Phone, MapPin, User as UserIcon } from "lucide-react";
+import {
+  Plus,
+  Mail,
+  Phone,
+  MapPin,
+  User as UserIcon,
+  Trash2,
+} from "lucide-react";
 import DataTable from "../../components/ui/DataTable";
 import Modal from "../../components/ui/Modal";
 import { adminService } from "../../services/adminService";
+import { userService } from "../../services/userService";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,6 +38,8 @@ const CenterAdmins = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
 
   const {
     register,
@@ -59,6 +69,37 @@ const CenterAdmins = () => {
   useEffect(() => {
     fetchAdmins();
   }, []);
+
+  const handleToggleStatus = async (user) => {
+    try {
+      await userService.toggleStatus(user.id);
+      toast.success(`Status updated for ${user.name}`);
+      fetchAdmins();
+    } catch (error) {
+      console.error("Status toggle failed:", error);
+      toast.error(error.response?.data?.message || "Failed to update status");
+    }
+  };
+
+  const handleDeleteClick = (admin) => {
+    setSelectedAdmin(admin);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setSubmitting(true);
+      await adminService.deleteCenterAdmin(selectedAdmin.id);
+      toast.success("Center Admin deleted successfully");
+      setIsDeleteModalOpen(false);
+      fetchAdmins();
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error(error.response?.data?.message || "Failed to delete admin");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const onSubmit = async (data) => {
     try {
@@ -119,13 +160,38 @@ const CenterAdmins = () => {
     {
       header: "Status",
       accessorKey: "is_active",
-      cell: (info) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${info.getValue() ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-        >
-          {info.getValue() ? "Active" : "Inactive"}
-        </span>
-      ),
+      cell: (info) => {
+        const admin = info.row.original;
+        return (
+          <button
+            onClick={() => handleToggleStatus(admin)}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all hover:ring-2 hover:ring-offset-1 ${
+              admin.is_active
+                ? "bg-green-100 text-green-700 hover:ring-green-300"
+                : "bg-gray-100 text-gray-500 hover:ring-gray-300"
+            }`}
+          >
+            {admin.is_active ? "Active" : "Inactive"}
+          </button>
+        );
+      },
+    },
+    {
+      header: "Actions",
+      cell: (info) => {
+        const admin = info.row.original;
+        return (
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleDeleteClick(admin)}
+              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Delete Admin"
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -284,6 +350,50 @@ const CenterAdmins = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Confirm Deletion"
+        size="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="p-4 bg-red-50 rounded-2xl flex items-center space-x-3 text-red-600">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <Trash2 size={24} />
+            </div>
+            <p className="font-bold text-sm">This action cannot be undone.</p>
+          </div>
+          <p className="text-gray-600 text-sm leading-relaxed px-1">
+            Are you sure you want to delete{" "}
+            <span className="font-black text-gray-900">
+              {selectedAdmin?.name}
+            </span>
+            ? This will permanently remove their administrative access.
+          </p>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={submitting}
+              className="px-8 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-100 transition-all flex items-center disabled:opacity-70"
+            >
+              {submitting ? (
+                <Spinner size="sm" className="mr-2" />
+              ) : (
+                <Trash2 size={16} className="mr-2" />
+              )}
+              Confirm Delete
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

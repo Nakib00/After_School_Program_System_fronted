@@ -13,4 +13,5 @@ export const adminService = {
         params: { _method: 'PUT' }
     }),
     deleteParent: (id) => api.delete(CENTERS.PARENT_DELETE(id)),
+    deleteCenterAdmin: (id) => api.delete(CENTERS.ADMIN_DELETE(id)),
 };

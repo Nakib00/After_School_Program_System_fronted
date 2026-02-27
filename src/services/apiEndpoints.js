@@ -13,6 +13,10 @@ export const AUTH = {
     CHANGE_PASSWORD: `${API_BASE}/change-password`,
 };
 
+export const USERS = {
+    TOGGLE_STATUS: (id) => `${API_BASE}/users/${id}/toggle-status`,
+};
+
 export const CENTERS = {
     LIST: `${API_BASE}/center`,
     CREATE: `${API_BASE}/center`,
@@ -25,6 +29,7 @@ export const CENTERS = {
     PARENT_DETAIL: (id) => `${API_BASE}/parents/${id}`,
     PARENT_UPDATE: (id) => `${API_BASE}/parents/${id}`,
     PARENT_DELETE: (id) => `${API_BASE}/parents/${id}`,
+    ADMIN_DELETE: (id) => `${API_BASE}/center-admins/${id}`,
 };
 
 export const STUDENTS = {
