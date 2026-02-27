@@ -118,6 +118,7 @@ export const FEES = {
     LIST: `${API_BASE}/fees`,
     GENERATE: `${API_BASE}/fees/generate`,
     DETAIL: (id) => `${API_BASE}/fees/${id}`,
+    UPDATE: (id) => `${API_BASE}/fees/${id}`,
     PAY: (id) => `${API_BASE}/fees/${id}/pay`,
     MARK_OVERDUE_ALL: `${API_BASE}/fees/mark-overdue`,
     REPORT: `${API_BASE}/fees/report`,

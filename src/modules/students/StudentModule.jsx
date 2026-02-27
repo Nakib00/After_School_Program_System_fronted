@@ -45,13 +45,17 @@ const studentSchema = z.object({
   center_id: z.coerce.number().min(1, "Center is required"),
   parent_id: z.coerce.number().optional().nullable(),
   teacher_id: z.coerce.number().optional().nullable(),
-  enrollment_no: z.string().max(50).optional().nullable(),
   date_of_birth: z.string().optional().nullable(),
   grade: z.string().max(20).optional().nullable(),
   enrollment_date: z.string().optional().nullable(),
   subjects: z.array(z.string()).optional().nullable(),
   current_level: z.string().max(20).optional().nullable(),
   address: z.string().max(255).optional().nullable(),
+  monthly_fee: z.coerce
+    .number()
+    .min(0, "Monthly fee must be a positive number")
+    .optional()
+    .nullable(),
   status: z
     .enum(["active", "inactive", "completed"])
     .optional()
@@ -174,13 +178,13 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
       center_id: initialFilters.center_id || "",
       parent_id: "",
       teacher_id: "",
-      enrollment_no: "",
       date_of_birth: "",
       grade: "",
       enrollment_date: "",
       subjects: [],
       current_level: "",
       address: "",
+      monthly_fee: "",
     });
     setIsModalOpen(true);
   };
@@ -196,7 +200,6 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
       center_id: student.center_id,
       parent_id: student.parent_id || "",
       teacher_id: student.teacher_id || "",
-      enrollment_no: student.enrollment_no || "",
       date_of_birth: student.date_of_birth
         ? new Date(student.date_of_birth).toISOString().split("T")[0]
         : "",
@@ -207,6 +210,7 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
       subjects: student.subjects || [],
       current_level: student.current_level || "",
       address: student.user?.address || "",
+      monthly_fee: student.monthly_fee || "",
       status: student.status || "active",
     });
     setIsModalOpen(true);
@@ -584,17 +588,6 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700">
-                  Enrollment No
-                </label>
-                <input
-                  {...register("enrollment_no")}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none"
-                  placeholder="e.g. S-2024-001"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700">
                   Teacher
                 </label>
                 <select
@@ -655,6 +648,29 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                     placeholder="Level"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700">
+                  Monthly Fee
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-400">
+                    <DollarSign size={18} />
+                  </span>
+                  <input
+                    {...register("monthly_fee")}
+                    type="number"
+                    step="0.01"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Monthly fee amount"
+                  />
+                </div>
+                {errors.monthly_fee && (
+                  <p className="text-xs text-red-500">
+                    {errors.monthly_fee.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -873,7 +889,7 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                                 {selectedStudent.grade || "N/A"}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center py-2">
+                            <div className="flex justify-between items-center py-2 border-b border-gray-200/50">
                               <span className="text-sm text-gray-500">
                                 Enrollment Date
                               </span>
@@ -883,6 +899,16 @@ const StudentModule = ({ role = "super_admin", initialFilters = {} }) => {
                                       selectedStudent.enrollment_date,
                                     ).toLocaleDateString()
                                   : "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-sm text-gray-500">
+                                Monthly Fee
+                              </span>
+                              <span className="text-sm font-bold text-indigo-600">
+                                {selectedStudent.monthly_fee
+                                  ? `$${selectedStudent.monthly_fee}`
+                                  : "Not Set"}
                               </span>
                             </div>
                           </div>

@@ -5,6 +5,7 @@ export const feeService = {
     getAll: (params) => api.get(FEES.LIST, { params }),
     generate: (data) => api.post(FEES.GENERATE, data),
     getById: (id) => api.get(FEES.DETAIL(id)),
+    update: (id, data) => api.put(FEES.UPDATE(id), data),
     pay: (id, data) => api.put(FEES.PAY(id), data),
     markAllOverdue: () => api.post(FEES.MARK_OVERDUE_ALL),
     getReport: (params) => api.get(FEES.REPORT, { params }),

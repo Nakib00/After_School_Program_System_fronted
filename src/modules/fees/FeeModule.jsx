@@ -23,6 +23,7 @@ import Spinner from "../../components/ui/Spinner";
 import { feeService } from "../../services/feeService";
 import { centerService } from "../../services/centerService";
 import { studentService } from "../../services/studentService";
+import { useAuthStore } from "../../store/authStore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -34,6 +35,16 @@ const feeSchema = z.object({
   due_date: z.string().min(1, "Due date is required"),
 });
 
+const editFeeSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Format must be YYYY-MM"),
+  amount: z.coerce.number().min(0, "Amount must be positive"),
+  due_date: z.string().min(1, "Due date is required"),
+  status: z.enum(["paid", "unpaid", "overdue", "cancelled"]),
+  paid_date: z.string().optional().nullable(),
+  payment_method: z.string().optional().nullable(),
+  transaction_id: z.string().optional().nullable(),
+});
+
 const paymentSchema = z.object({
   payment_method: z.string().min(1, "Payment method is required"),
   transaction_id: z.string().optional(),
@@ -41,6 +52,7 @@ const paymentSchema = z.object({
 });
 
 const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
+  const { user } = useAuthStore();
   const [fees, setFees] = useState([]);
   const [centers, setCenters] = useState([]);
   const [students, setStudents] = useState([]);
@@ -50,6 +62,7 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [selectedFee, setSelectedFee] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const {
     register,
@@ -77,6 +90,15 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
       payment_method: "Cash",
       paid_date: new Date().toISOString().split("T")[0],
     },
+  });
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
+  } = useForm({
+    resolver: zodResolver(editFeeSchema),
   });
 
   const [report, setReport] = useState([]);
@@ -116,7 +138,14 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
   const onSubmit = async (data) => {
     try {
       setSubmitting(true);
-      await feeService.generate(data);
+      const payload = { ...data };
+
+      // Fallback to user's center_id if not provided or set to 0 (default/empty option)
+      if ((!payload.center_id || payload.center_id === 0) && user?.center_id) {
+        payload.center_id = user.center_id;
+      }
+
+      await feeService.generate(payload);
       toast.success("Invoice generated successfully");
       setIsModalOpen(false);
       reset();
@@ -137,6 +166,20 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
       fetchData();
     } catch (error) {
       toast.error("Failed to record payment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onUpdate = async (data) => {
+    try {
+      setSubmitting(true);
+      await feeService.update(selectedFee.id, data);
+      toast.success("Fee record updated successfully");
+      setIsEditModalOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Update failed");
     } finally {
       setSubmitting(false);
     }
@@ -259,6 +302,27 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
           >
             <Eye size={18} />
           </button>
+          {role !== "parents" && (
+            <button
+              onClick={() => {
+                setSelectedFee(row.original);
+                setIsEditModalOpen(true);
+                resetEdit({
+                  month: row.original.month,
+                  amount: row.original.amount,
+                  due_date: row.original.due_date,
+                  status: row.original.status,
+                  paid_date: row.original.paid_date,
+                  payment_method: row.original.payment_method,
+                  transaction_id: row.original.transaction_id,
+                });
+              }}
+              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
+              title="Edit Fee"
+            >
+              <Plus size={18} className="rotate-45" />
+            </button>
+          )}
           <button className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-transparent hover:border-gray-200">
             <Download size={18} />
           </button>
@@ -739,6 +803,147 @@ const FeeModule = ({ role = "super_admin", initialFilters = {} }) => {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Fee Record"
+        size="md"
+      >
+        <form
+          onSubmit={handleSubmitEdit(onUpdate)}
+          className="space-y-4 pt-2 pb-2"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
+                Fee Month (YYYY-MM)
+              </label>
+              <input
+                type="month"
+                {...registerEdit("month")}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-900"
+              />
+              {editErrors.month && (
+                <p className="text-xs text-red-500 font-bold">
+                  {editErrors.month.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
+                Amount (৳)
+              </label>
+              <input
+                type="number"
+                {...registerEdit("amount")}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-900"
+              />
+              {editErrors.amount && (
+                <p className="text-xs text-red-500 font-bold">
+                  {editErrors.amount.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
+                Due Date
+              </label>
+              <input
+                type="date"
+                {...registerEdit("due_date")}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-gray-900"
+              />
+              {editErrors.due_date && (
+                <p className="text-xs text-red-500 font-bold">
+                  {editErrors.due_date.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
+                Status
+              </label>
+              <select
+                {...registerEdit("status")}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-gray-900"
+              >
+                <option value="unpaid">Unpaid</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              {editErrors.status && (
+                <p className="text-xs text-red-500 font-bold">
+                  {editErrors.status.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-x-4 border-t border-gray-100 pt-4 mt-4">
+            <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-4">
+              Payment Information (Read-only if Unpaid)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
+                  Payment Method
+                </label>
+                <input
+                  {...registerEdit("payment_method")}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-gray-900"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
+                  Transaction ID
+                </label>
+                <input
+                  {...registerEdit("transaction_id")}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-gray-900"
+                />
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-sm font-semibold text-gray-700 font-bold uppercase tracking-wider text-[10px]">
+                  Paid Date
+                </label>
+                <input
+                  type="date"
+                  {...registerEdit("paid_date")}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-gray-900"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-6 font-bold space-x-3">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-8 py-2.5 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-all flex items-center"
+            >
+              {submitting ? (
+                <Spinner size="sm" className="mr-2" />
+              ) : (
+                "Update Record"
+              )}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
