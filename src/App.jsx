@@ -4,6 +4,7 @@ import AppRoutes from "./routes/AppRoutes";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import Spinner from "./components/ui/Spinner";
+import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
 
 function App() {
@@ -41,10 +42,12 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <AppRoutes />
-      <Toaster position="top-right" />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AppRoutes />
+        <Toaster position="top-right" />
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

@@ -93,7 +93,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     ],
   };
 
-  const currentMenu = user?.role ? menuItems[user.role] : [];
+  const currentMenu = (user?.role && menuItems[user.role]) || [];
 
   return (
     <>
